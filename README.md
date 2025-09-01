@@ -31,17 +31,49 @@ OCI 인스턴스 자동 생성, Discord 봇 슬래시 명령어, pm2 서비스 �
 
 ### 1. `config.json` 파일 작성
 
+아래 예시처럼 작성합니다.
+
 ```json
 {
-  "A": "ap-SEOUL-1",
-  "C": "ocid1.compartment.oc1..xxx",
-  "S": "ocid1.subnet.oc1..xxx",
-  "I": "ocid1.image.oc1..xxx",
-  "availabilityConfig": { ... },
-  "instanceOptions": { ... },
-  "shapeConfig": { ... }
+  "A": "ap-seoul-1",
+  "C": "ocid1.compartment.oc1..exampleuniqueID1234",
+  "S": "ocid1.subnet.oc1..exampleuniqueID5678",
+  "I": "ocid1.image.oc1..exampleuniqueID9101",
+  "availabilityConfig": {
+    "isLiveMigrationPreferred": true,
+    "recoveryAction": "RESTORE_INSTANCE"
+  },
+  "instanceOptions": {
+    "areLegacyImdsEndpointsDisabled": false
+  },
+  "shapeConfig": {
+    "ocpus": 1,
+    "memoryInGBs": 6
+  }
 }
 ```
+
+#### 각 값 구하는 방법
+
+- **A (Availability Domain)**  
+  - OCI 콘솔 → Compute → 인스턴스 생성 화면에서 "가용 도메인" 확인  
+  - CLI: `oci iam availability-domain list --compartment-id <tenancy_ocid>`
+- **C (Compartment OCID)**  
+  - OCI 콘솔 → 좌측 메뉴 "Compartments"에서 대상 compartment 클릭  
+  - 상세정보에서 OCID 복사  
+  - CLI: `oci iam compartment list --compartment-id <tenancy_ocid>`
+- **S (Subnet OCID)**  
+  - OCI 콘솔 → 네트워킹 → Subnets에서 대상 subnet 클릭  
+  - 상세정보에서 OCID 복사  
+  - CLI: `oci network subnet list --compartment-id <compartment_ocid>`
+- **I (Image OCID)**  
+  - OCI 콘솔 → Compute → 이미지 → 대상 OS 이미지 선택  
+  - 상세정보에서 OCID 복사  
+  - CLI: `oci compute image list --compartment-id <compartment_ocid>`
+- **availabilityConfig / instanceOptions / shapeConfig**  
+  - [OCI 공식 CLI 문서](https://docs.oracle.com/en-us/iaas/Content/API/SDKDocs/clitroubleshooting.htm) 및  
+    [OCI 인스턴스 launch 옵션 문서](https://docs.oracle.com/en-us/iaas/api/#/en/iaas/20160918/requests/LaunchInstanceRequest) 참고  
+  - 예제 값은 위 config.json 참고
 
 ### 2. `.env` 파일 작성
 
@@ -91,6 +123,13 @@ bash oci_setup_and_bot.sh
 - 인스턴스 생성 명령어/옵션은 [OCI 공식 문서](https://docs.oracle.com/en-us/iaas/Content/API/SDKDocs/cliinstall.htm) 참고
 - **보안 주의:** 키 파일의 권한은 반드시 `600`으로 설정하세요.
 - 봇 로그는 `oci_bot.log`에 저장됩니다.
+
+---
+
+## 📰 참고한 글
+
+- [Resolving Oracle Cloud Out of Capacity Issue and Getting Free VPS with 4 ARM Cores, 24GB of RAM (Medium)](https://hitrov.medium.com/resolving-oracle-cloud-out-of-capacity-issue-and-getting-free-vps-with-4-arm-cores-24gb-of-a3d7e6a027a8)
+- [OCI 공식 CLI 및 API 문서](https://docs.oracle.com/en-us/iaas/Content/API/SDKDocs/clitroubleshooting.htm)
 
 ---
 
