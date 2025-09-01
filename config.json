@@ -1,8 +1,17 @@
 {
-  "A": "ap-seoul-1", 
-  "C": "ocid1.compartment.oc1..exampleuniqueID1234",
-  "S": "ocid1.subnet.oc1..exampleuniqueID5678",
-  "I": "ocid1.image.oc1..exampleuniqueID9101",
+  "TENANCY_OCID": "ocid1.tenancy.oc1..xxxx",
+  "USER_OCID": "ocid1.user.oc1..xxxx",
+  "COMPARTMENT_OCID": "ocid1.compartment.oc1..xxxx",
+  "FINGERPRINT": "xx:xx:xx:xx:xx:xx",
+  "REGION": "ap-seoul-1",
+  "KEY_FILE": "/home/ubuntu/.oci/oci_api_key.pem",
+  "DISCORD_TOKEN": "your_discord_bot_token",
+  "DISCORD_CLIENT_ID": "bot_client_id",
+  "DISCORD_GUILD_ID": "server_guild_id",
+  "DISCORD_CHANNEL_ID": "channel_id",
+  "SHAPE": "VM.Standard.A1.Flex",
+  "SUBNET_ID": "ocid1.subnet.oc1..exampleuniqueID5678",
+  "IMAGE_ID": "ocid1.image.oc1..exampleuniqueID9101",
   "availabilityConfig": {
     "isLiveMigrationPreferred": true,
     "recoveryAction": "RESTORE_INSTANCE"
