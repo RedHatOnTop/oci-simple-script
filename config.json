@@ -1,0 +1,17 @@
+{
+  "A": "ap-seoul-1", 
+  "C": "ocid1.compartment.oc1..exampleuniqueID1234",
+  "S": "ocid1.subnet.oc1..exampleuniqueID5678",
+  "I": "ocid1.image.oc1..exampleuniqueID9101",
+  "availabilityConfig": {
+    "isLiveMigrationPreferred": true,
+    "recoveryAction": "RESTORE_INSTANCE"
+  },
+  "instanceOptions": {
+    "areLegacyImdsEndpointsDisabled": false
+  },
+  "shapeConfig": {
+    "ocpus": 1,
+    "memoryInGBs": 6
+  }
+}
