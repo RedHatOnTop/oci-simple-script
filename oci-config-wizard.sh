@@ -296,52 +296,51 @@ prompt_and_save() {
   echo "$EXISTING" > "$CONFIG_FILE"
 }
 
-# OCI config 파일에서 자동 추출 (함수 제거하고 직접 구현)() {
-  if [ -f "$OCI_CONFIG_FILE" ]; then
-    log success "기존 OCI config 파일 발견: $OCI_CONFIG_FILE"
-    
-    # OCI config 파일에서 값 추출
-    user_ocid=$(grep "^user=" "$OCI_CONFIG_FILE" | cut -d'=' -f2 | tr -d ' ')
-    tenancy_ocid=$(grep "^tenancy=" "$OCI_CONFIG_FILE" | cut -d'=' -f2 | tr -d ' ')
-    fingerprint=$(grep "^fingerprint=" "$OCI_CONFIG_FILE" | cut -d'=' -f2 | tr -d ' ')
-    region=$(grep "^region=" "$OCI_CONFIG_FILE" | cut -d'=' -f2 | tr -d ' ')
-    key_file=$(grep "^key_file=" "$OCI_CONFIG_FILE" | cut -d'=' -f2 | tr -d ' ')
-    
-    # 물결표시 경로 확장
-    key_file="${key_file/#\~/$HOME}"
-    
-    if [ -n "$user_ocid" ]; then
-      EXISTING=$(echo "$EXISTING" | jq --arg v "$user_ocid" '.USER_OCID=$v')
-      log info "USER_OCID 자동 설정: $user_ocid"
-    fi
-    
-    if [ -n "$tenancy_ocid" ]; then
-      EXISTING=$(echo "$EXISTING" | jq --arg v "$tenancy_ocid" '.TENANCY_OCID=$v')
-      log info "TENANCY_OCID 자동 설정: $tenancy_ocid"
-    fi
-    
-    if [ -n "$fingerprint" ]; then
-      EXISTING=$(echo "$EXISTING" | jq --arg v "$fingerprint" '.FINGERPRINT=$v')
-      log info "FINGERPRINT 자동 설정: $fingerprint"
-    fi
-    
-    if [ -n "$region" ]; then
-      EXISTING=$(echo "$EXISTING" | jq --arg v "$region" '.REGION=$v')
-      log info "REGION 자동 설정: $region"
-    fi
-    
-    if [ -n "$key_file" ]; then
-      EXISTING=$(echo "$EXISTING" | jq --arg v "$key_file" '.KEY_FILE=$v')
-      log info "KEY_FILE 자동 설정: $key_file"
-    fi
-    
-    echo "$EXISTING" > "$CONFIG_FILE"
-    log success "OCI config에서 환경변수 자동 추출 완료!"
-  else
-    log warn "OCI config 파일이 없습니다. 수동으로 입력해야 합니다."
-    log info "다음 명령어로 OCI CLI 설정을 먼저 해주세요: oci setup config"
+# OCI config 파일에서 자동 추출
+if [ -f "$OCI_CONFIG_FILE" ]; then
+  log success "기존 OCI config 파일 발견: $OCI_CONFIG_FILE"
+  
+  # OCI config 파일에서 값 추출
+  user_ocid=$(grep "^user=" "$OCI_CONFIG_FILE" | cut -d'=' -f2 | tr -d ' ')
+  tenancy_ocid=$(grep "^tenancy=" "$OCI_CONFIG_FILE" | cut -d'=' -f2 | tr -d ' ')
+  fingerprint=$(grep "^fingerprint=" "$OCI_CONFIG_FILE" | cut -d'=' -f2 | tr -d ' ')
+  region=$(grep "^region=" "$OCI_CONFIG_FILE" | cut -d'=' -f2 | tr -d ' ')
+  key_file=$(grep "^key_file=" "$OCI_CONFIG_FILE" | cut -d'=' -f2 | tr -d ' ')
+  
+  # 물결표시 경로 확장
+  key_file="${key_file/#\~/$HOME}"
+  
+  if [ -n "$user_ocid" ]; then
+    EXISTING=$(echo "$EXISTING" | jq --arg v "$user_ocid" '.USER_OCID=$v')
+    log info "USER_OCID 자동 설정: $user_ocid"
   fi
-}
+  
+  if [ -n "$tenancy_ocid" ]; then
+    EXISTING=$(echo "$EXISTING" | jq --arg v "$tenancy_ocid" '.TENANCY_OCID=$v')
+    log info "TENANCY_OCID 자동 설정: $tenancy_ocid"
+  fi
+  
+  if [ -n "$fingerprint" ]; then
+    EXISTING=$(echo "$EXISTING" | jq --arg v "$fingerprint" '.FINGERPRINT=$v')
+    log info "FINGERPRINT 자동 설정: $fingerprint"
+  fi
+  
+  if [ -n "$region" ]; then
+    EXISTING=$(echo "$EXISTING" | jq --arg v "$region" '.REGION=$v')
+    log info "REGION 자동 설정: $region"
+  fi
+  
+  if [ -n "$key_file" ]; then
+    EXISTING=$(echo "$EXISTING" | jq --arg v "$key_file" '.KEY_FILE=$v')
+    log info "KEY_FILE 자동 설정: $key_file"
+  fi
+  
+  echo "$EXISTING" > "$CONFIG_FILE"
+  log success "OCI config에서 환경변수 자동 추출 완료!"
+else
+  log warn "OCI config 파일이 없습니다. 수동으로 입력해야 합니다."
+  log info "다음 명령어로 OCI CLI 설정을 먼저 해주세요: oci setup config"
+fi
 
 echo ""
 log wizard "=== 1단계: OCI 환경변수 자동 추출 ==="
