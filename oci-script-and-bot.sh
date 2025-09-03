@@ -32,8 +32,23 @@ setup_sudo_environment() {
   ORIGINAL_USER=${SUDO_USER:-$(whoami)}
   ORIGINAL_HOME=$(eval echo ~$ORIGINAL_USER)
   
-  # OCI CLI PATH 설정 (사용자 설치 경로들 추가)
-  export PATH="$ORIGINAL_HOME/bin:$ORIGINAL_HOME/.local/bin:$ORIGINAL_HOME/lib/oracle-cli/bin:/usr/local/bin:/usr/bin:$PATH"
+  # OCI CLI 심볼릭 링크 생성 (사용자 설치된 OCI CLI를 시스템 경로에 링크)
+  local user_oci_paths=(
+    "$ORIGINAL_HOME/bin/oci"
+    "$ORIGINAL_HOME/.local/bin/oci"
+    "$ORIGINAL_HOME/lib/oracle-cli/bin/oci"
+  )
+  
+  # 사용자의 OCI CLI 찾기 및 심볼릭 링크 생성
+  for oci_path in "${user_oci_paths[@]}"; do
+    if [[ -x "$oci_path" ]]; then
+      if [[ ! -L "/usr/local/bin/oci" ]]; then
+        echo -e "\033[0;36mℹ️ $(date '+%H:%M:%S')\033[0m OCI CLI 심볼릭 링크 생성: $oci_path -> /usr/local/bin/oci"
+        ln -sf "$oci_path" /usr/local/bin/oci
+      fi
+      break
+    fi
+  done
   
   # OCI 설정 파일 경로 설정 (원래 사용자의 홈 디렉토리 사용)
   export OCI_CLI_RC_FILE="$ORIGINAL_HOME/.oci/config"
@@ -47,8 +62,9 @@ setup_sudo_environment() {
     local oci_path=$(which oci)
     echo -e "\033[0;32m✅ $(date '+%H:%M:%S')\033[0m OCI CLI 발견: $oci_path"
   else
-    echo -e "\033[1;33m⚠️ $(date '+%H:%M:%S')\033[0m OCI CLI를 찾을 수 없습니다. PATH 확인이 필요할 수 있습니다."
-    echo "  현재 PATH: ${PATH:0:150}..."
+    echo -e "\033[1;33m⚠️ $(date '+%H:%M:%S')\033[0m OCI CLI를 찾을 수 없습니다."
+    echo "  사용자 경로를 확인하거나 다음 명령어로 수동 링크 생성:"
+    echo "  sudo ln -s /home/\$USER/bin/oci /usr/local/bin/oci"
   fi
 }
 

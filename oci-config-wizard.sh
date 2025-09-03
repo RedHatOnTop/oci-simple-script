@@ -30,6 +30,21 @@
 
 set -euo pipefail
 
+# 🔒 Root/Sudo 실행 방지
+if [[ $EUID -eq 0 ]]; then
+  echo -e "\033[1;31m❌ 오류: 이 스크립트는 root 또는 sudo로 실행할 수 없습니다.\033[0m"
+  echo ""
+  echo -e "\033[1;33m⚠️ 이유:\033[0m"
+  echo "• OCI CLI 설치 스크립트가 root 실행을 차단합니다"
+  echo "• 사용자 홈 디렉토리에 설치되어야 합니다"
+  echo ""
+  echo -e "\033[0;36mℹ️ 해결방법:\033[0m"
+  echo "일반 사용자로 실행하세요:"
+  echo -e "\033[1;32mbash oci-config-wizard.sh\033[0m"
+  echo ""
+  exit 1
+fi
+
 # 🎨 컬러 및 이모지 정의
 readonly GREEN='\033[0;32m'
 readonly RED='\033[0;31m'
@@ -452,6 +467,42 @@ prompt_and_save DISCORD_TOKEN "Discord Bot Token"
 prompt_and_save DISCORD_CLIENT_ID "Discord Client ID"
 prompt_and_save DISCORD_GUILD_ID "Discord Guild ID (서버 ID)"
 prompt_and_save DISCORD_CHANNEL_ID "Discord Channel ID"
+
+# Discord Bot 초대 링크 자동 생성
+generate_discord_invite_link() {
+  local client_id=$(get_current DISCORD_CLIENT_ID)
+  if [[ -n "$client_id" ]]; then
+    local permissions="274878024704"  # 필요한 권한들의 비트마스크
+    local invite_url="https://discord.com/oauth2/authorize?client_id=${client_id}&scope=bot&permissions=${permissions}"
+    
+    echo ""
+    log success "🔗 Discord Bot 초대 링크가 자동 생성되었습니다!"
+    echo ""
+    echo -e "${CYAN}┌────────────────────────────────────────────────────────────────┐${RESET}"
+    echo -e "${CYAN}│${RESET}                     ${BOLD}Discord Bot 초대 링크${RESET}                     ${CYAN}│${RESET}"
+    echo -e "${CYAN}├────────────────────────────────────────────────────────────────┤${RESET}"
+    echo -e "${CYAN}│${RESET} ${GREEN}${invite_url}${RESET} ${CYAN}│${RESET}"
+    echo -e "${CYAN}└────────────────────────────────────────────────────────────────┘${RESET}"
+    echo ""
+    echo -e "${YELLOW}💡 이 링크를 사용하여 봇을 Discord 서버에 초대하세요:${RESET}"
+    echo "1. 위 링크를 브라우저에서 열기"
+    echo "2. Discord 서버 선택"
+    echo "3. 권한 확인 후 '승인' 클릭"
+    echo ""
+    
+    # 클립보드 복사 시도 (선택적)
+    if command -v xclip >/dev/null 2>&1; then
+      echo "$invite_url" | xclip -selection clipboard
+      log info "📋 링크가 클립보드에 복사되었습니다!"
+    elif command -v pbcopy >/dev/null 2>&1; then
+      echo "$invite_url" | pbcopy
+      log info "📋 링크가 클립보드에 복사되었습니다!"
+    fi
+  fi
+}
+
+# Discord Bot 초대 링크 생성 실행
+generate_discord_invite_link
 
 # OCI API 호출을 위한 필수값 검증
 COMPARTMENT_OCID=$(get_current COMPARTMENT_OCID)
@@ -1275,9 +1326,23 @@ EOF
   echo -e "${GREEN}${BOLD}║                     ✅ 설정 마법사 완료!                                    ║${RESET}"
   echo -e "${GREEN}${BOLD}║                                                                              ║${RESET}"
   echo -e "${GREEN}${BOLD}║    다음 단계:                                                                ║${RESET}"
-  echo -e "${GREEN}${BOLD}║    1. bash ~/.oci/launch_instance.sh (인스턴스 생성)                       ║${RESET}"
-  echo -e "${GREEN}${BOLD}║    2. bash oci-script-and-bot.sh (Discord Bot 시작)                        ║${RESET}"
+  echo -e "${GREEN}${BOLD}║    1. Discord Bot 서버 초대 (위의 초대 링크 사용)                          ║${RESET}"
+  echo -e "${GREEN}${BOLD}║    2. bash ~/.oci/launch_instance.sh (인스턴스 생성)                       ║${RESET}"
+  echo -e "${GREEN}${BOLD}║    3. sudo bash oci-script-and-bot.sh (Discord Bot 시작)                   ║${RESET}"
   echo -e "${GREEN}${BOLD}╚══════════════════════════════════════════════════════════════════════════════╝${RESET}"
+
+  # Discord Bot 초대 링크 재안내
+  local client_id=$(get_current DISCORD_CLIENT_ID)
+  if [[ -n "$client_id" ]]; then
+    local permissions="274878024704"
+    local invite_url="https://discord.com/oauth2/authorize?client_id=${client_id}&scope=bot&permissions=${permissions}"
+    
+    echo ""
+    echo -e "${CYAN}🔗 Discord Bot 초대 링크:${RESET}"
+    echo -e "${GREEN}${invite_url}${RESET}"
+    echo ""
+  fi
+
   echo ""
 else
   echo ""
@@ -1288,4 +1353,50 @@ else
   echo ""
   log error "마법사를 다시 실행하여 누락된 설정을 완료해주세요."
   exit 1
+fi
+
+# =============================================================================
+# 🔗 유틸리티: Discord Bot 초대 링크 확인
+# =============================================================================
+# 사용법: bash oci-config-wizard.sh --invite-link
+if [[ "$1" == "--invite-link" ]]; then
+  echo ""
+  echo -e "${CYAN}${BOLD}🔗 Discord Bot 초대 링크 확인${RESET}"
+  echo ""
+  
+  if [[ ! -f "config.json" ]]; then
+    log error "config.json 파일을 찾을 수 없습니다."
+    log info "먼저 설정 마법사를 실행하세요: bash oci-config-wizard.sh"
+    exit 1
+  fi
+  
+  local client_id=$(jq -r '.DISCORD_CLIENT_ID // empty' config.json)
+  if [[ -z "$client_id" ]]; then
+    log error "DISCORD_CLIENT_ID가 설정되지 않았습니다."
+    log info "설정 마법사를 다시 실행하세요: bash oci-config-wizard.sh"
+    exit 1
+  fi
+  
+  local permissions="274878024704"
+  local invite_url="https://discord.com/oauth2/authorize?client_id=${client_id}&scope=bot&permissions=${permissions}"
+  
+  echo -e "${CYAN}┌────────────────────────────────────────────────────────────────┐${RESET}"
+  echo -e "${CYAN}│${RESET}                     ${BOLD}Discord Bot 초대 링크${RESET}                     ${CYAN}│${RESET}"
+  echo -e "${CYAN}├────────────────────────────────────────────────────────────────┤${RESET}"
+  echo -e "${CYAN}│${RESET} ${GREEN}${invite_url}${RESET} ${CYAN}│${RESET}"
+  echo -e "${CYAN}└────────────────────────────────────────────────────────────────┘${RESET}"
+  echo ""
+  echo -e "${YELLOW}💡 이 링크를 브라우저에서 열어 봇을 Discord 서버에 초대하세요.${RESET}"
+  echo ""
+  
+  # 클립보드 복사 시도
+  if command -v xclip >/dev/null 2>&1; then
+    echo "$invite_url" | xclip -selection clipboard
+    log info "📋 링크가 클립보드에 복사되었습니다!"
+  elif command -v pbcopy >/dev/null 2>&1; then
+    echo "$invite_url" | pbcopy
+    log info "📋 링크가 클립보드에 복사되었습니다!"
+  fi
+  
+  exit 0
 fi
