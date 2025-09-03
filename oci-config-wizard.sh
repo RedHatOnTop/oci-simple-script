@@ -219,6 +219,15 @@ check_dependencies() {
   echo ""
 }
 
+# 🆕 진행률 표시 함수
+print_progress() {
+  local step="$1"
+  local message="$2"
+  echo ""
+  log wizard "[$step/5] $message"
+  echo ""
+}
+
 # 🆕 디버깅 정보 출력 함수
 print_debug_info() {
   if [[ "${DEBUG:-}" == "1" ]]; then
@@ -463,7 +472,7 @@ if ! ADS_RAW=$(oci iam availability-domain list --compartment-id "$COMPARTMENT_O
   exit 1
 fi
 
-ads=($(echo "$ADS_RAW" | jq -r '.data[].name'))
+ads=($(echo "$ADS_RAW" | jq -r '.data[]? | select(.name != null) | .name'))
 current_ad=$(get_current AVAILABILITY_DOMAIN)
 
 log success "사용 가능한 Availability Domain:"
@@ -606,8 +615,9 @@ if ! SUBNETS_RAW=$(oci network subnet list --compartment-id "$COMPARTMENT_OCID" 
   exit 1
 fi
 
-subnet_names=($(echo "$SUBNETS_RAW" | jq -r '.data[].display_name'))
-subnet_ids=($(echo "$SUBNETS_RAW" | jq -r '.data[].id'))
+subnet_names=($(echo "$SUBNETS_RAW" | jq -r '.data[]? | select(."display-name" != null) | ."display-name"'))
+subnet_ids=($(echo "$SUBNETS_RAW" | jq -r '.data[]? | select(.id != null) | .id'))
+subnet_cidrs=($(echo "$SUBNETS_RAW" | jq -r '.data[]? | select(."cidr-block" != null) | ."cidr-block"'))
 
 if [ ${#subnet_ids[@]} -eq 0 ]; then
   log fail "사용 가능한 Subnet이 없습니다. OCI 콘솔에서 VCN과 Subnet을 먼저 생성하세요."
@@ -617,7 +627,7 @@ fi
 current_subnet=$(get_current SUBNET_ID)
 log success "사용 가능한 Subnet:"
 for i in "${!subnet_ids[@]}"; do
-  echo "  $i) ${subnet_names[$i]}"
+  echo "  $i) ${subnet_names[$i]} (${subnet_cidrs[$i]})"
 done
 
 if [ -n "$current_subnet" ]; then
@@ -632,21 +642,42 @@ fi
 EXISTING=$(echo "$EXISTING" | jq --arg v "$SUBNET_ID" '.SUBNET_ID=$v')
 echo "$EXISTING" > "$CONFIG_FILE"
 log success "Subnet 설정: ${subnet_names[$subnet_idx]}"
-# Image 선택 (Ubuntu 이미지만 필터링)
+# Image 선택 (선택한 Shape에 맞는 이미지 조회)
 echo ""
 log info "🖼️ 사용 가능한 OS Image 조회 중..."
-if ! IMAGES_RAW=$(oci compute image list --compartment-id "$COMPARTMENT_OCID" --operating-system "Canonical Ubuntu" --sort-by TIMECREATED --sort-order DESC 2>/dev/null); then
-  log warn "Ubuntu 이미지 조회 실패. 모든 이미지를 조회합니다..."
-  IMAGES_RAW=$(oci compute image list --compartment-id "$COMPARTMENT_OCID" --sort-by TIMECREATED --sort-order DESC 2>/dev/null)
+
+# 선택된 Shape 가져오기
+current_shape=$(get_current SHAPE)
+if [ -z "$current_shape" ]; then
+  current_shape="VM.Standard.E2.1.Micro"  # 기본값
 fi
 
-image_names=($(echo "$IMAGES_RAW" | jq -r '.data[0:10] | .[] | .display_name'))
-image_ids=($(echo "$IMAGES_RAW" | jq -r '.data[0:10] | .[] | .id'))
+# Shape에 따른 이미지 조회
+if [[ "$current_shape" == *"A1.Flex"* ]]; then
+  # A1.Flex는 ARM 아키텍처이므로 aarch64 이미지만 조회
+  log info "ARM 기반 Shape 감지: $current_shape"
+  if ! IMAGES_RAW=$(oci compute image list --compartment-id "$COMPARTMENT_OCID" --shape "$current_shape" --sort-by TIMECREATED --sort-order DESC 2>/dev/null); then
+    log warn "Shape 기반 이미지 조회 실패. Ubuntu aarch64 이미지를 조회합니다..."
+    IMAGES_RAW=$(oci compute image list --compartment-id "$COMPARTMENT_OCID" --operating-system "Canonical Ubuntu" --sort-by TIMECREATED --sort-order DESC 2>/dev/null | jq '.data = [.data[] | select(."display-name" | contains("aarch64"))]')
+  fi
+else
+  # E2.1.Micro 및 기타 x86_64 Shape
+  log info "x86_64 기반 Shape 감지: $current_shape"
+  if ! IMAGES_RAW=$(oci compute image list --compartment-id "$COMPARTMENT_OCID" --operating-system "Canonical Ubuntu" --sort-by TIMECREATED --sort-order DESC 2>/dev/null); then
+    log warn "Ubuntu 이미지 조회 실패. 모든 이미지를 조회합니다..."
+    IMAGES_RAW=$(oci compute image list --compartment-id "$COMPARTMENT_OCID" --sort-by TIMECREATED --sort-order DESC 2>/dev/null)
+  fi
+fi
+
+# 이미지 정보 추출 (운영체제 정보 포함)
+image_names=($(echo "$IMAGES_RAW" | jq -r '.data[0:15][]? | select(."display-name" != null) | ."display-name"'))
+image_ids=($(echo "$IMAGES_RAW" | jq -r '.data[0:15][]? | select(.id != null) | .id'))
+image_os=($(echo "$IMAGES_RAW" | jq -r '.data[0:15][]? | select(."operating-system" != null) | ."operating-system"'))
 
 current_image=$(get_current IMAGE_ID)
-log success "사용 가능한 OS Image (최신 10개):"
+log success "사용 가능한 OS Image (최신 15개, $current_shape 호환):"
 for i in "${!image_ids[@]}"; do
-  echo "  $i) ${image_names[$i]}"
+  echo "  $i) ${image_names[$i]} [${image_os[$i]}]"
 done
 
 if [ -n "$current_image" ]; then
