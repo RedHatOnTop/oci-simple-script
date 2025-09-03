@@ -1,6 +1,21 @@
 #!/bin/bash
 
-# =============================================================================
+# ===================================================================  echo -e "${CYAN}│${RESET} ☐ Discord Bot 생성 및 토큰 보유                            ${CYAN}│${RESET}"
+  echo -e "${CYAN}│${RESET} ☐ 서버에 봇 초대 및 권한 설정                              ${CYAN}│${RESET}"
+  echo -e "${CYAN}└────────────────────────────────────────────────────────────────┘${RESET}"
+  echo ""
+  
+  log info "💡 OCI CLI 미설정 시:"
+  echo -e "   ${CYAN}oci setup config${RESET}"
+  echo ""
+  log info "💡 Discord Bot 생성:"
+  echo -e "   ${CYAN}https://discord.com/developers/applications${RESET}"
+  echo """💡 OCI CLI 미설정 시:"
+  echo -e "   ${CYAN}oci setup config${RESET}"
+  echo ""
+  log info "💡 Discord Bot 생성:"
+  echo -e "   ${CYAN}https://discord.com/developers/applications${RESET}"
+  echo ""====
 # 🧙‍♂️ OCI Always Free Discord Bot 설정 마법사
 # =============================================================================
 # Oracle Cloud Infrastructure Always Free 인스턴스 자동 생성 봇을 위한
@@ -49,10 +64,10 @@ print_header() {
   echo -e "${CYAN}${BOLD}"
   echo "╔══════════════════════════════════════════════════════════════════════════════╗"
   echo "║                                                                              ║"
-  echo "║                    🧙‍♂️ OCI Always Free Discord Bot                          ║"
-  echo "║                              설정 마법사                                    ║"
+  echo "║                    🧙‍♂️ OCI Always Free Discord Bot                           ║"
+  echo "║                              설정 마법사                                     ║"
   echo "║                                                                              ║"
-  echo "║         Oracle Cloud Infrastructure Always Free 인스턴스 자동 생성         ║"
+  echo "║         Oracle Cloud Infrastructure Always Free 인스턴스 자동 생성            ║"
   echo "║                                                                              ║"
   echo "╚══════════════════════════════════════════════════════════════════════════════╝"
   echo -e "${RESET}"
@@ -70,6 +85,9 @@ OCI_CONFIG_FILE="$HOME/.oci/config"
 print_header
 
 log wizard "OCI/Discord Bot 완전 자동화 설정 마법사를 시작합니다!"
+echo ""
+log info "💡 문제가 발생하면 다음과 같이 디버깅 모드로 실행하세요:"
+echo -e "   ${CYAN}DEBUG=1 bash oci-config-wizard.sh${RESET}"
 echo ""
 
 print_requirements() {
@@ -126,47 +144,94 @@ check_dependencies() {
     fi
   fi
   
-  # OCI CLI 확인
+  # OCI CLI 확인 (Windows/Linux 호환)
+  local oci_found=false
+  local oci_version=""
+  
+  # 여러 방법으로 OCI CLI 확인
   if command -v oci >/dev/null 2>&1; then
-    local oci_version=$(oci --version 2>/dev/null | head -1)
+    oci_version=$(oci --version 2>/dev/null | head -1 || echo "Unknown version")
+    oci_found=true
+  elif [[ -x "$HOME/bin/oci" ]]; then
+    oci_version=$("$HOME/bin/oci" --version 2>/dev/null | head -1 || echo "Unknown version")
+    oci_found=true
+    export PATH="$HOME/bin:$PATH"
+  elif [[ -x "$HOME/.local/bin/oci" ]]; then
+    oci_version=$("$HOME/.local/bin/oci" --version 2>/dev/null | head -1 || echo "Unknown version")
+    oci_found=true
+    export PATH="$HOME/.local/bin:$PATH"
+  fi
+  
+  if [[ "$oci_found" == "true" ]]; then
     log success "OCI CLI 설치 확인됨: ${oci_version}"
   else
     log warn "OCI CLI가 설치되지 않았습니다."
+    echo -e "  ${YELLOW}다음 경로들을 확인했습니다:${RESET}"
+    echo -e "  • PATH 환경변수"
+    echo -e "  • $HOME/bin/oci"
+    echo -e "  • $HOME/.local/bin/oci"
+    echo ""
     read -p "지금 설치하시겠습니까? (y/N): " install_oci
     if [[ "$install_oci" =~ ^[Yy]$ ]]; then
       log info "OCI CLI 설치 중..."
       bash -c "$(curl -L https://raw.githubusercontent.com/oracle/oci-cli/master/scripts/install/install.sh)"
       
-      # PATH 설정
-      export PATH="$HOME/bin:$PATH"
-      if command -v oci >/dev/null 2>&1; then
+      # PATH 설정 (여러 경로 추가)
+      export PATH="$HOME/bin:$HOME/.local/bin:$PATH"
+      
+      # 설치 후 다시 확인
+      if command -v oci >/dev/null 2>&1 || [[ -x "$HOME/bin/oci" ]] || [[ -x "$HOME/.local/bin/oci" ]]; then
         log success "OCI CLI 설치 완료"
       else
         log error "OCI CLI 설치 후 PATH 설정이 필요합니다:"
-        echo "  ${CYAN}export PATH=\"\$HOME/bin:\$PATH\"${RESET}"
+        echo -e "  ${CYAN}export PATH=\"\$HOME/bin:\$PATH\"${RESET}"
+        echo -e "  ${CYAN}source ~/.bashrc${RESET}"
+        echo ""
+        log info "또는 터미널을 다시 시작한 후 스크립트를 재실행하세요."
         deps_ok=false
       fi
     else
       log error "OCI CLI가 필요합니다. 다음 명령어로 설치하세요:"
-      echo "  ${CYAN}bash -c \"\$(curl -L https://raw.githubusercontent.com/oracle/oci-cli/master/scripts/install/install.sh)\"${RESET}"
+      echo -e "  ${CYAN}bash -c \"\$(curl -L https://raw.githubusercontent.com/oracle/oci-cli/master/scripts/install/install.sh)\"${RESET}"
       deps_ok=false
     fi
   fi
   
-  # OCI config 파일 확인
+  # OCI config 파일 확인 및 검증
   if [[ -f "$OCI_CONFIG_FILE" ]]; then
     log success "OCI config 파일 발견: $OCI_CONFIG_FILE"
     
     # config 파일 유효성 검사
-    if grep -q "user\|tenancy\|region\|key_file" "$OCI_CONFIG_FILE"; then
+    local required_fields=("user" "tenancy" "region" "key_file" "fingerprint")
+    local missing_fields=()
+    
+    for field in "${required_fields[@]}"; do
+      if ! grep -q "^${field}=" "$OCI_CONFIG_FILE"; then
+        missing_fields+=("$field")
+      fi
+    done
+    
+    if [[ ${#missing_fields[@]} -eq 0 ]]; then
       log success "OCI config 파일 형식 검증 완료"
+      
+      # API 키 파일 존재 확인
+      local key_file=$(grep "^key_file=" "$OCI_CONFIG_FILE" | cut -d'=' -f2 | tr -d ' ' | sed 's|^~|'"$HOME"'|')
+      if [[ -f "$key_file" ]]; then
+        log success "API 키 파일 확인됨: $key_file"
+      else
+        log warn "API 키 파일을 찾을 수 없습니다: $key_file"
+        echo -e "  ${YELLOW}키 파일 경로를 확인하거나 다시 생성하세요.${RESET}"
+      fi
     else
-      log warn "OCI config 파일이 불완전할 수 있습니다."
-      echo "  ${CYAN}재설정 명령어:${RESET} oci setup config"
+      log warn "OCI config 파일에 다음 필드가 누락되었습니다:"
+      for field in "${missing_fields[@]}"; do
+        echo -e "  • ${RED}$field${RESET}"
+      done
+      echo -e "  ${CYAN}재설정 명령어:${RESET} oci setup config"
     fi
   else
     log error "OCI config 파일이 없습니다: $OCI_CONFIG_FILE"
-    echo "  ${CYAN}설정 명령어:${RESET} oci setup config"
+    echo -e "  ${CYAN}설정 명령어:${RESET} oci setup config"
     deps_ok=false
   fi
   
@@ -181,7 +246,27 @@ check_dependencies() {
   echo ""
 }
 
+# 🆕 디버깅 정보 출력 함수
+print_debug_info() {
+  if [[ "${DEBUG:-}" == "1" ]]; then
+    echo ""
+    log info "🔍 디버깅 정보:"
+    echo -e "  • Shell: $SHELL"
+    echo -e "  • PATH: ${PATH:0:100}..."
+    echo -e "  • HOME: $HOME"
+    echo -e "  • PWD: $PWD"
+    echo -e "  • OCI CLI 경로들:"
+    for path in "$HOME/bin/oci" "$HOME/.local/bin/oci" "$(which oci 2>/dev/null || echo 'N/A')"; do
+      if [[ -n "$path" && "$path" != "N/A" ]]; then
+        echo -e "    - $path: $(test -x "$path" && echo '✅ 실행가능' || echo '❌ 없음')"
+      fi
+    done
+    echo ""
+  fi
+}
+
 check_dependencies
+print_debug_info
     export PATH="$HOME/bin:$PATH"
     log success "OCI CLI 설치 완료! 터미널을 재시작하거나 'export PATH=\"\$HOME/bin:\$PATH\"'를 실행하세요."
   else
