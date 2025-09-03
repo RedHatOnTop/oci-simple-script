@@ -145,49 +145,14 @@ check_dependencies() {
     fi
   fi
   
-  # OCI CLI 확인 (단순화된 로직)
-  local oci_found=false
-  local oci_version=""
+  # OCI CLI 확인 (단순화된 명령어 출력 검증)
+  log info "🔍 OCI CLI 확인 중..."
   
-  # 1단계: PATH에서 확인
-  if command -v oci >/dev/null 2>&1; then
-    oci_version=$(oci --version 2>/dev/null | head -1 || echo "Unknown version")
-    if [[ "$oci_version" == *"oci"* ]] || [[ "$oci_version" == *"Oracle"* ]]; then
-      oci_found=true
-      log success "OCI CLI 발견 (PATH): $(which oci)"
-    fi
-  fi
-  
-  # 2단계: 일반적인 설치 경로들 확인 (PATH에서 찾지 못한 경우에만)
-  if [[ "$oci_found" == "false" ]]; then
-    local common_paths=(
-      "$HOME/bin/oci"
-      "$HOME/.local/bin/oci"
-      "$HOME/lib/oracle-cli/bin/oci"
-      "/usr/local/bin/oci"
-      "/opt/oci-cli/bin/oci"
-    )
-    
-    log info "🔍 OCI CLI 검색 중... (${#common_paths[@]}개 경로 확인)"
-    
-    for path in "${common_paths[@]}"; do
-      if [[ -f "$path" && -x "$path" ]]; then
-        oci_version=$("$path" --version 2>/dev/null | head -1 || echo "Unknown version")
-        if [[ "$oci_version" == *"oci"* ]] || [[ "$oci_version" == *"Oracle"* ]]; then
-          oci_found=true
-          log success "OCI CLI 발견: ${path}"
-          export PATH="$(dirname "$path"):$PATH"
-          break
-        fi
-      fi
-    done
-  fi
-  
-  if [[ "$oci_found" == "true" ]]; then
+  if oci --version >/dev/null 2>&1; then
+    local oci_version=$(oci --version 2>/dev/null | head -1)
     log success "OCI CLI 설치 확인됨: ${oci_version}"
   else
-    log warn "OCI CLI가 설치되지 않았습니다."
-    echo -e "  ${YELLOW}확인된 경로: PATH, $HOME/bin/, $HOME/.local/bin/, $HOME/lib/oracle-cli/bin/${RESET}"
+    log warn "OCI CLI가 설치되지 않았거나 PATH에 없습니다."
     echo ""
     read -p "지금 설치하시겠습니까? (y/N): " install_oci
     if [[ "$install_oci" =~ ^[Yy]$ ]]; then
