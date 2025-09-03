@@ -39,15 +39,15 @@ setup_sudo_environment() {
   export OCI_CLI_RC_FILE="$ORIGINAL_HOME/.oci/config"
   export OCI_CONFIG_FILE="$ORIGINAL_HOME/.oci/config"
   
-  log info "환경 설정 완료 - 원래 사용자: $ORIGINAL_USER"
-  log info "OCI 설정 경로: $OCI_CONFIG_FILE"
+  echo -e "\033[0;36mℹ️ $(date '+%H:%M:%S')\033[0m 환경 설정 완료 - 원래 사용자: $ORIGINAL_USER"
+  echo -e "\033[0;36mℹ️ $(date '+%H:%M:%S')\033[0m OCI 설정 경로: $OCI_CONFIG_FILE"
   
   # OCI CLI 접근 가능 여부 확인
   if command -v oci >/dev/null 2>&1; then
     local oci_path=$(which oci)
-    log success "OCI CLI 발견: $oci_path"
+    echo -e "\033[0;32m✅ $(date '+%H:%M:%S')\033[0m OCI CLI 발견: $oci_path"
   else
-    log warn "OCI CLI를 찾을 수 없습니다. PATH 확인이 필요할 수 있습니다."
+    echo -e "\033[1;33m⚠️ $(date '+%H:%M:%S')\033[0m OCI CLI를 찾을 수 없습니다. PATH 확인이 필요할 수 있습니다."
     echo "  현재 PATH: ${PATH:0:150}..."
   fi
 }
