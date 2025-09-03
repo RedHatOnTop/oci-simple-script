@@ -15,6 +15,46 @@
 
 set -euo pipefail
 
+# 🔧 sudo 실행 및 OCI CLI PATH 설정
+setup_sudo_environment() {
+  # sudo 실행 확인 및 안내
+  if [[ $EUID -ne 0 ]]; then
+    echo -e "\033[1;33m⚠️ 이 스크립트는 pm2 전역 설치를 위해 sudo 권한이 필요합니다.\033[0m"
+    echo ""
+    echo -e "\033[0;36mℹ️ 다음 명령어로 다시 실행하세요:\033[0m"
+    echo -e "\033[1;32msudo bash $0\033[0m"
+    echo ""
+    echo -e "\033[1;33m💡 참고: sudo 실행 시에도 사용자 계정의 OCI CLI 설정을 사용합니다.\033[0m"
+    exit 1
+  fi
+  
+  # 원래 사용자 정보 확인
+  ORIGINAL_USER=${SUDO_USER:-$(whoami)}
+  ORIGINAL_HOME=$(eval echo ~$ORIGINAL_USER)
+  
+  # OCI CLI PATH 설정 (사용자 설치 경로들 추가)
+  export PATH="$ORIGINAL_HOME/bin:$ORIGINAL_HOME/.local/bin:$ORIGINAL_HOME/lib/oracle-cli/bin:/usr/local/bin:/usr/bin:$PATH"
+  
+  # OCI 설정 파일 경로 설정 (원래 사용자의 홈 디렉토리 사용)
+  export OCI_CLI_RC_FILE="$ORIGINAL_HOME/.oci/config"
+  export OCI_CONFIG_FILE="$ORIGINAL_HOME/.oci/config"
+  
+  log info "환경 설정 완료 - 원래 사용자: $ORIGINAL_USER"
+  log info "OCI 설정 경로: $OCI_CONFIG_FILE"
+  
+  # OCI CLI 접근 가능 여부 확인
+  if command -v oci >/dev/null 2>&1; then
+    local oci_path=$(which oci)
+    log success "OCI CLI 발견: $oci_path"
+  else
+    log warn "OCI CLI를 찾을 수 없습니다. PATH 확인이 필요할 수 있습니다."
+    echo "  현재 PATH: ${PATH:0:150}..."
+  fi
+}
+
+# 환경 설정 실행
+setup_sudo_environment
+
 # 🎨 컬러 및 이모지 정의
 readonly GREEN='\033[0;32m'
 readonly RED='\033[0;31m'
@@ -63,10 +103,25 @@ print_header() {
 }
 
 WORKDIR="$(pwd)"
-CONFIG_FILE="$WORKDIR/config.json"
+# sudo 실행 시 원래 사용자의 config.json 사용
+if [[ $EUID -eq 0 ]] && [[ -n "${ORIGINAL_USER:-}" ]]; then
+  CONFIG_FILE="$ORIGINAL_HOME/$(basename "$WORKDIR")/config.json"
+  # 원래 사용자 디렉토리에 config.json이 없으면 현재 디렉토리 확인
+  if [[ ! -f "$CONFIG_FILE" ]]; then
+    CONFIG_FILE="$WORKDIR/config.json"
+  fi
+else
+  CONFIG_FILE="$WORKDIR/config.json"
+fi
 
 print_header
 log bot "OCI Discord Bot 자동화 스크립트를 시작합니다!"
+
+# sudo 환경에서 실행 중인지 확인 및 설정
+if [[ $EUID -eq 0 ]]; then
+  log info "🔑 sudo 권한으로 실행 중 - 환경 설정 적용됨"
+fi
+
 echo ""
 
 # 1. config.json 파일 존재 및 유효성 검증
@@ -198,7 +253,19 @@ fi
 
 if ! command -v pm2 > /dev/null; then
   log info "pm2 설치 중..."
-  npm install -g pm2
+  
+  # npm 권한 확인 및 처리
+  if ! npm install -g pm2 2>/dev/null; then
+    log warning "권한 오류로 인해 sudo로 PM2를 설치합니다..."
+    if [[ $EUID -ne 0 ]]; then
+      log info "스크립트를 sudo로 다시 실행합니다..."
+      exec sudo -E "$0" "$@"
+    else
+      # 이미 sudo로 실행 중이면 환경 설정 후 설치
+      setup_sudo_environment
+      npm install -g pm2
+    fi
+  fi
   log success "pm2 설치 완료"
 else
   log success "pm2 이미 설치됨"

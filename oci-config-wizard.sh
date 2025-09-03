@@ -694,6 +694,115 @@ echo "$EXISTING" > "$CONFIG_FILE"
 log success "Image 설정: ${image_names[$image_idx]}"
 
 echo ""
+log wizard "=== 3.5단계: SSH 키 설정 ==="
+
+# SSH 키 관리
+setup_ssh_keys() {
+  echo ""
+  log info "🔐 SSH 키 설정 (인스턴스 접속을 위해 필요):"
+  echo "  1) 기존 SSH 공개키 파일 경로 입력"
+  echo "  2) 공개키 내용 직접 입력 (Termius 등에서 복사)"
+  echo "  3) 새 SSH 키 쌍 자동 생성"
+  echo ""
+  
+  while true; do
+    read -p "선택 (1-3): " ssh_choice
+    
+    case $ssh_choice in
+      1)
+        echo ""
+        log info "SSH 공개키 파일 경로를 입력하세요:"
+        echo "  예: ~/.ssh/id_rsa.pub, ~/.ssh/oracle_key.pub"
+        read -p "공개키 파일 경로: " ssh_key_path
+        
+        # 경로 확장
+        ssh_key_path="${ssh_key_path/#\~/$HOME}"
+        
+        if [[ -f "$ssh_key_path" ]]; then
+          SSH_PUBLIC_KEY_PATH="$ssh_key_path"
+          log success "SSH 공개키 파일 확인: $ssh_key_path"
+          break
+        else
+          log error "파일을 찾을 수 없습니다: $ssh_key_path"
+        fi
+        ;;
+      2)
+        echo ""
+        log info "SSH 공개키 내용을 붙여넣으세요:"
+        echo "  (ssh-rsa로 시작하는 전체 내용)"
+        echo "  입력 완료 후 Enter 두 번 눌러주세요:"
+        
+        ssh_key_content=""
+        while IFS= read -r line; do
+          [[ -z "$line" ]] && break
+          ssh_key_content+="$line"
+        done
+        
+        if [[ "$ssh_key_content" =~ ^ssh-(rsa|ed25519|ecdsa) ]]; then
+          # 임시 파일에 저장
+          SSH_PUBLIC_KEY_PATH="/tmp/oracle_ssh_key_$$.pub"
+          echo "$ssh_key_content" > "$SSH_PUBLIC_KEY_PATH"
+          log success "SSH 공개키 내용이 저장되었습니다."
+          break
+        else
+          log error "올바른 SSH 공개키 형식이 아닙니다. ssh-rsa, ssh-ed25519, 또는 ssh-ecdsa로 시작해야 합니다."
+        fi
+        ;;
+      3)
+        echo ""
+        log info "새 SSH 키 쌍을 생성합니다..."
+        
+        # SSH 키 저장 디렉토리 생성
+        ssh_dir="$HOME/.ssh"
+        mkdir -p "$ssh_dir"
+        chmod 700 "$ssh_dir"
+        
+        # 키 파일명 생성
+        timestamp=$(date +%Y%m%d_%H%M%S)
+        private_key_path="$ssh_dir/oracle_key_$timestamp"
+        public_key_path="$ssh_dir/oracle_key_$timestamp.pub"
+        
+        # SSH 키 생성
+        if ssh-keygen -t rsa -b 4096 -f "$private_key_path" -N "" -C "oracle-instance-$timestamp"; then
+          SSH_PUBLIC_KEY_PATH="$public_key_path"
+          
+          echo ""
+          log success "🎉 SSH 키 쌍이 생성되었습니다!"
+          echo -e "${YELLOW}${BOLD}⚠️  중요: 다음 파일들을 반드시 안전하게 보관하세요! ⚠️${RESET}"
+          echo ""
+          echo -e "${CYAN}📁 생성된 파일:${RESET}"
+          echo -e "  🔐 개인키: ${private_key_path}"
+          echo -e "  🔓 공개키: ${public_key_path}"
+          echo ""
+          echo -e "${YELLOW}📋 SSH 접속 명령어 (인스턴스 생성 후 사용):${RESET}"
+          echo -e "  ${CYAN}ssh -i ${private_key_path} opc@<인스턴스_IP>${RESET}"
+          echo ""
+          echo -e "${RED}⚠️  개인키를 분실하면 인스턴스에 접속할 수 없습니다!${RESET}"
+          echo ""
+          read -p "파일 위치를 확인했습니다. 계속하려면 Enter 키를 누르세요..."
+          break
+        else
+          log error "SSH 키 생성에 실패했습니다."
+        fi
+        ;;
+      *)
+        log warn "올바른 번호를 선택하세요 (1-3)"
+        ;;
+    esac
+  done
+  
+  # SSH 공개키를 config.json에 저장
+  ssh_key_content=$(cat "$SSH_PUBLIC_KEY_PATH")
+  EXISTING=$(echo "$EXISTING" | jq --arg v "$ssh_key_content" '.SSH_PUBLIC_KEY=$v')
+  EXISTING=$(echo "$EXISTING" | jq --arg v "$SSH_PUBLIC_KEY_PATH" '.SSH_PUBLIC_KEY_PATH=$v')
+  echo "$EXISTING" > "$CONFIG_FILE"
+  
+  log success "SSH 키 설정 완료!"
+}
+
+setup_ssh_keys
+
+echo ""
 log wizard "=== 4단계: 인스턴스 사양 설정 ==="
 
 # 선택한 Shape의 제한사항
@@ -996,12 +1105,178 @@ done
 if [ "$all_valid" = true ]; then
   echo ""
   log success "🎉 모든 필수 설정이 완료되었습니다!"
+  
+  # OCI 인스턴스 생성 명령어 생성
+  generate_launch_command() {
+    echo ""
+    log info "🚀 OCI 인스턴스 생성 명령어를 생성합니다..."
+    
+    # 설정값 읽기
+    local compartment_id=$(get_current COMPARTMENT_OCID)
+    local shape=$(get_current SHAPE)
+    local subnet_id=$(get_current SUBNET_ID)
+    local image_id=$(get_current IMAGE_ID)
+    local availability_domain=$(get_current AVAILABILITY_DOMAIN)
+    local ocpus=$(get_current shapeConfig.ocpus)
+    local memory=$(get_current shapeConfig.memoryInGBs)
+    local boot_volume=$(get_current bootVolumeConfig.sizeInGBs)
+    local ssh_key_path=$(get_current SSH_PUBLIC_KEY_PATH)
+    
+    # JSON 설정 파일들 생성
+    local config_dir="$HOME/.oci/launch_configs"
+    mkdir -p "$config_dir"
+    
+    # availabilityConfig.json
+    cat > "$config_dir/availabilityConfig.json" << EOF
+{
+  "isLiveMigrationPreferred": true,
+  "recoveryAction": "RESTORE_INSTANCE"
+}
+EOF
+    
+    # instanceOptions.json
+    cat > "$config_dir/instanceOptions.json" << EOF
+{
+  "areLegacyImdsEndpointsDisabled": false
+}
+EOF
+    
+    # shapeConfig.json (Flex Shape인 경우만)
+    if [[ "$shape" == *"Flex"* ]]; then
+      cat > "$config_dir/shapeConfig.json" << EOF
+{
+  "ocpus": $ocpus,
+  "memoryInGBs": $memory
+}
+EOF
+    fi
+    
+    # bootVolumeConfig.json
+    cat > "$config_dir/bootVolumeConfig.json" << EOF
+{
+  "sizeInGBs": $boot_volume
+}
+EOF
+    
+    # 인스턴스 생성 스크립트 생성
+    local script_path="$HOME/.oci/launch_instance.sh"
+    cat > "$script_path" << EOF
+#!/bin/bash
+# Oracle Cloud Infrastructure 인스턴스 생성 스크립트
+# 생성일: $(date)
+
+# 설정 변수
+COMPARTMENT_ID="$compartment_id"
+SHAPE="$shape"
+SUBNET_ID="$subnet_id"
+IMAGE_ID="$image_id"
+AVAILABILITY_DOMAIN="$availability_domain"
+SSH_KEY_PATH="$ssh_key_path"
+CONFIG_DIR="$config_dir"
+
+# 인스턴스 이름 (타임스탬프 포함)
+INSTANCE_NAME="oracle-instance-\$(date +%Y%m%d-%H%M%S)"
+
+echo "🚀 Oracle Cloud 인스턴스 생성 중..."
+echo "  • 이름: \$INSTANCE_NAME"
+echo "  • Shape: $shape"
+echo "  • OCPU: $ocpus, RAM: ${memory}GB"
+echo "  • 부트볼륨: ${boot_volume}GB"
+echo ""
+
+# OCI CLI 명령어 실행
+EOF
+    
+    # Flex Shape 여부에 따라 명령어 생성
+    if [[ "$shape" == *"Flex"* ]]; then
+      cat >> "$script_path" << EOF
+oci compute instance launch \\
+  --compartment-id "\$COMPARTMENT_ID" \\
+  --availability-domain "\$AVAILABILITY_DOMAIN" \\
+  --shape "$shape" \\
+  --shape-config file://\$CONFIG_DIR/shapeConfig.json \\
+  --subnet-id "\$SUBNET_ID" \\
+  --image-id "\$IMAGE_ID" \\
+  --display-name "\$INSTANCE_NAME" \\
+  --assign-public-ip true \\
+  --assign-private-dns-record true \\
+  --ssh-authorized-keys-file "\$SSH_KEY_PATH" \\
+  --availability-config file://\$CONFIG_DIR/availabilityConfig.json \\
+  --instance-options file://\$CONFIG_DIR/instanceOptions.json \\
+  --source-boot-volume-size-in-gbs $boot_volume \\
+  --wait-for-state RUNNING \\
+  --wait-interval-seconds 30 \\
+  --max-wait-seconds 1800
+EOF
+    else
+      cat >> "$script_path" << EOF
+oci compute instance launch \\
+  --compartment-id "\$COMPARTMENT_ID" \\
+  --availability-domain "\$AVAILABILITY_DOMAIN" \\
+  --shape "$shape" \\
+  --subnet-id "\$SUBNET_ID" \\
+  --image-id "\$IMAGE_ID" \\
+  --display-name "\$INSTANCE_NAME" \\
+  --assign-public-ip true \\
+  --assign-private-dns-record true \\
+  --ssh-authorized-keys-file "\$SSH_KEY_PATH" \\
+  --availability-config file://\$CONFIG_DIR/availabilityConfig.json \\
+  --instance-options file://\$CONFIG_DIR/instanceOptions.json \\
+  --source-boot-volume-size-in-gbs $boot_volume \\
+  --wait-for-state RUNNING \\
+  --wait-interval-seconds 30 \\
+  --max-wait-seconds 1800
+EOF
+    fi
+    
+    cat >> "$script_path" << EOF
+
+# 결과 확인
+if [ \$? -eq 0 ]; then
+  echo ""
+  echo "✅ 인스턴스 생성 성공!"
+  echo ""
+  echo "🔐 SSH 접속 방법:"
+  echo "  ssh -i ${ssh_key_path%.pub} opc@<인스턴스_공개_IP>"
+  echo ""
+  echo "💡 인스턴스 정보 확인:"
+  echo "  oci compute instance list --compartment-id \$COMPARTMENT_ID --display-name \$INSTANCE_NAME"
+else
+  echo "❌ 인스턴스 생성 실패"
+  echo "자주 발생하는 오류:"
+  echo "  • Out of capacity: 다른 Availability Domain 시도"
+  echo "  • LimitExceeded: Always Free 한도 초과"
+  echo "  • InvalidParameter: 설정값 확인 필요"
+fi
+EOF
+    
+    chmod +x "$script_path"
+    
+    echo ""
+    log success "🎯 인스턴스 생성 스크립트가 준비되었습니다!"
+    echo ""
+    echo -e "${CYAN}📁 생성된 파일:${RESET}"
+    echo -e "  🚀 실행 스크립트: ${script_path}"
+    echo -e "  ⚙️  설정 파일들: ${config_dir}/"
+    echo ""
+    echo -e "${YELLOW}🚀 인스턴스 생성 방법:${RESET}"
+    echo -e "  ${CYAN}bash $script_path${RESET}"
+    echo ""
+    echo -e "${YELLOW}💡 자동 재시도 (Out of Capacity 대응):${RESET}"
+    echo -e "  ${CYAN}watch -n 300 'bash $script_path'${RESET}"
+    echo -e "  (5분마다 자동 재시도, Ctrl+C로 중단)"
+    echo ""
+  }
+  
+  generate_launch_command
+  
   echo ""
   echo -e "${GREEN}${BOLD}╔══════════════════════════════════════════════════════════════════════════════╗${RESET}"
   echo -e "${GREEN}${BOLD}║                     ✅ 설정 마법사 완료!                                    ║${RESET}"
   echo -e "${GREEN}${BOLD}║                                                                              ║${RESET}"
-  echo -e "${GREEN}${BOLD}║         이제 'bash oci-script-and-bot.sh'를 실행하여                       ║${RESET}"
-  echo -e "${GREEN}${BOLD}║               Discord Bot을 시작하세요!                                     ║${RESET}"
+  echo -e "${GREEN}${BOLD}║    다음 단계:                                                                ║${RESET}"
+  echo -e "${GREEN}${BOLD}║    1. bash ~/.oci/launch_instance.sh (인스턴스 생성)                       ║${RESET}"
+  echo -e "${GREEN}${BOLD}║    2. bash oci-script-and-bot.sh (Discord Bot 시작)                        ║${RESET}"
   echo -e "${GREEN}${BOLD}╚══════════════════════════════════════════════════════════════════════════════╝${RESET}"
   echo ""
 else
