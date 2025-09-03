@@ -86,8 +86,9 @@ print_header
 
 log wizard "OCI/Discord Bot 완전 자동화 설정 마법사를 시작합니다!"
 echo ""
-log info "💡 문제가 발생하면 다음과 같이 디버깅 모드로 실행하세요:"
-echo -e "   ${CYAN}DEBUG=1 bash oci-config-wizard.sh${RESET}"
+log info "💡 문제가 발생하면 다음과 같이 실행하세요:"
+echo -e "   ${CYAN}DEBUG=1 bash oci-config-wizard.sh${RESET}        # 디버깅 모드"
+echo -e "   ${CYAN}SHOW_HELP=1 bash oci-config-wizard.sh${RESET}    # OCI 설치 도움말"
 echo ""
 
 print_requirements() {
@@ -144,46 +145,109 @@ check_dependencies() {
     fi
   fi
   
-  # OCI CLI 확인 (Windows/Linux 호환)
+  # OCI CLI 확인 (포괄적인 경로 검색)
   local oci_found=false
   local oci_version=""
+  local oci_path=""
   
-  # 여러 방법으로 OCI CLI 확인
+  # 1단계: PATH에서 먼저 확인
   if command -v oci >/dev/null 2>&1; then
+    oci_path=$(which oci)
     oci_version=$(oci --version 2>/dev/null | head -1 || echo "Unknown version")
     oci_found=true
-  elif [[ -x "$HOME/bin/oci" ]]; then
-    oci_version=$("$HOME/bin/oci" --version 2>/dev/null | head -1 || echo "Unknown version")
-    oci_found=true
-    export PATH="$HOME/bin:$PATH"
-  elif [[ -x "$HOME/.local/bin/oci" ]]; then
-    oci_version=$("$HOME/.local/bin/oci" --version 2>/dev/null | head -1 || echo "Unknown version")
-    oci_found=true
-    export PATH="$HOME/.local/bin:$PATH"
+    log success "OCI CLI 발견 (PATH): ${oci_path}"
+  else
+    # 2단계: 일반적인 설치 경로들 검색
+    local common_paths=(
+      "$HOME/bin/oci"
+      "$HOME/.local/bin/oci"
+      "$HOME/lib/oracle-cli/bin/oci"
+      "$HOME/.oci/bin/oci"
+      "/usr/local/bin/oci"
+      "/usr/bin/oci"
+      "/opt/oci-cli/bin/oci"
+    )
+    
+    # 3단계: 동적 경로 검색 (bin/oci로 끝나는 모든 경로)
+    local dynamic_paths=()
+    if command -v find >/dev/null 2>&1; then
+      # 홈 디렉토리에서 oci 실행파일 검색 (3분 제한)
+      while IFS= read -r -d '' path; do
+        dynamic_paths+=("$path")
+      done < <(timeout 3 find "$HOME" -name "oci" -type f -executable 2>/dev/null | head -10 | tr '\n' '\0' 2>/dev/null || true)
+    fi
+    
+    # 모든 경로 합치기
+    local all_paths=("${common_paths[@]}" "${dynamic_paths[@]}")
+    
+    log info "🔍 OCI CLI 검색 중... (${#all_paths[@]}개 경로 확인)"
+    
+    for path in "${all_paths[@]}"; do
+      if [[ -n "$path" && -x "$path" ]]; then
+        oci_version=$("$path" --version 2>/dev/null | head -1 || echo "Unknown version")
+        if [[ "$oci_version" == *"oci"* ]] || [[ "$oci_version" == *"Oracle"* ]]; then
+          oci_found=true
+          oci_path="$path"
+          # PATH에 추가
+          local oci_dir=$(dirname "$path")
+          export PATH="$oci_dir:$PATH"
+          log success "OCI CLI 발견: ${path}"
+          break
+        fi
+      fi
+    done
   fi
   
   if [[ "$oci_found" == "true" ]]; then
     log success "OCI CLI 설치 확인됨: ${oci_version}"
+    if [[ -n "$oci_path" ]]; then
+      log info "📍 설치 경로: ${oci_path}"
+    fi
   else
     log warn "OCI CLI가 설치되지 않았습니다."
     echo -e "  ${YELLOW}다음 경로들을 확인했습니다:${RESET}"
     echo -e "  • PATH 환경변수"
-    echo -e "  • $HOME/bin/oci"
-    echo -e "  • $HOME/.local/bin/oci"
+    echo -e "  • $HOME/bin/"
+    echo -e "  • $HOME/.local/bin/"
+    echo -e "  • $HOME/lib/oracle-cli/bin/"
+    echo -e "  • 기타 일반적인 설치 경로들"
     echo ""
     read -p "지금 설치하시겠습니까? (y/N): " install_oci
     if [[ "$install_oci" =~ ^[Yy]$ ]]; then
       log info "OCI CLI 설치 중..."
       bash -c "$(curl -L https://raw.githubusercontent.com/oracle/oci-cli/master/scripts/install/install.sh)"
       
-      # PATH 설정 (여러 경로 추가)
-      export PATH="$HOME/bin:$HOME/.local/bin:$PATH"
+      # 설치 후 재검색
+      log info "설치 완료. OCI CLI 재검색 중..."
+      sleep 2
       
-      # 설치 후 다시 확인
-      if command -v oci >/dev/null 2>&1 || [[ -x "$HOME/bin/oci" ]] || [[ -x "$HOME/.local/bin/oci" ]]; then
-        log success "OCI CLI 설치 완료"
-      else
-        log error "OCI CLI 설치 후 PATH 설정이 필요합니다:"
+      # PATH 설정 (여러 경로 추가)
+      export PATH="$HOME/bin:$HOME/.local/bin:$HOME/lib/oracle-cli/bin:$PATH"
+      
+      # 다시 동일한 검색 로직 실행
+      local post_install_found=false
+      local post_install_paths=(
+        "$(which oci 2>/dev/null || echo '')"
+        "$HOME/bin/oci"
+        "$HOME/.local/bin/oci"
+        "$HOME/lib/oracle-cli/bin/oci"
+      )
+      
+      for path in "${post_install_paths[@]}"; do
+        if [[ -n "$path" && -x "$path" ]]; then
+          local test_version=$("$path" --version 2>/dev/null | head -1 || echo "")
+          if [[ "$test_version" == *"oci"* ]] || [[ "$test_version" == *"Oracle"* ]]; then
+            post_install_found=true
+            log success "OCI CLI 설치 완료! 경로: ${path}"
+            log info "버전: ${test_version}"
+            break
+          fi
+        fi
+      done
+      
+      if [[ "$post_install_found" == "false" ]]; then
+        log error "OCI CLI 설치 후 감지에 실패했습니다."
+        echo -e "  ${YELLOW}수동으로 PATH를 설정해주세요:${RESET}"
         echo -e "  ${CYAN}export PATH=\"\$HOME/bin:\$PATH\"${RESET}"
         echo -e "  ${CYAN}source ~/.bashrc${RESET}"
         echo ""
@@ -252,21 +316,78 @@ print_debug_info() {
     echo ""
     log info "🔍 디버깅 정보:"
     echo -e "  • Shell: $SHELL"
-    echo -e "  • PATH: ${PATH:0:100}..."
+    echo -e "  • PATH: ${PATH:0:150}..."
     echo -e "  • HOME: $HOME"
     echo -e "  • PWD: $PWD"
-    echo -e "  • OCI CLI 경로들:"
-    for path in "$HOME/bin/oci" "$HOME/.local/bin/oci" "$(which oci 2>/dev/null || echo 'N/A')"; do
+    echo -e "  • USER: ${USER:-$(whoami)}"
+    echo ""
+    echo -e "  • OCI CLI 검색 경로들:"
+    
+    local debug_paths=(
+      "$(which oci 2>/dev/null || echo 'N/A')"
+      "$HOME/bin/oci"
+      "$HOME/.local/bin/oci"
+      "$HOME/lib/oracle-cli/bin/oci"
+      "$HOME/.oci/bin/oci"
+      "/usr/local/bin/oci"
+      "/usr/bin/oci"
+      "/opt/oci-cli/bin/oci"
+    )
+    
+    for path in "${debug_paths[@]}"; do
       if [[ -n "$path" && "$path" != "N/A" ]]; then
-        echo -e "    - $path: $(test -x "$path" && echo '✅ 실행가능' || echo '❌ 없음')"
+        local status="❌ 없음"
+        if [[ -e "$path" ]]; then
+          if [[ -x "$path" ]]; then
+            local version=$("$path" --version 2>/dev/null | head -1 || echo "버전 확인 실패")
+            status="✅ 실행가능 (${version})"
+          else
+            status="🟡 존재하나 실행불가"
+          fi
+        fi
+        echo -e "    - $path: $status"
       fi
     done
+    
+    # 동적 검색 결과
+    if command -v find >/dev/null 2>&1; then
+      echo ""
+      echo -e "  • 동적 검색 결과 (홈 디렉토리):"
+      timeout 3 find "$HOME" -name "oci" -type f -executable 2>/dev/null | head -5 | while read -r found_path; do
+        echo -e "    - 발견: $found_path"
+      done || echo -e "    - 검색 시간 초과 또는 오류"
+    fi
     echo ""
   fi
 }
 
 check_dependencies
 print_debug_info
+
+# 🆕 OCI CLI 설치 도움말 함수
+show_oci_install_help() {
+  if [[ "${SHOW_HELP:-}" == "1" ]]; then
+    echo ""
+    log info "💡 OCI CLI 수동 설치 가이드:"
+    echo -e "  ${CYAN}1. 공식 설치 스크립트:${RESET}"
+    echo -e "     bash -c \"\$(curl -L https://raw.githubusercontent.com/oracle/oci-cli/master/scripts/install/install.sh)\""
+    echo ""
+    echo -e "  ${CYAN}2. 설치 후 PATH 설정:${RESET}"
+    echo -e "     export PATH=\"\$HOME/bin:\$PATH\""
+    echo -e "     echo 'export PATH=\"\$HOME/bin:\$PATH\"' >> ~/.bashrc"
+    echo ""
+    echo -e "  ${CYAN}3. 설치 확인:${RESET}"
+    echo -e "     oci --version"
+    echo ""
+    echo -e "  ${YELLOW}일반적인 설치 경로:${RESET}"
+    echo -e "  • Ubuntu/Debian: ~/.local/bin/oci"
+    echo -e "  • CentOS/RHEL: ~/bin/oci"
+    echo -e "  • 수동 설치: ~/lib/oracle-cli/bin/oci"
+    echo ""
+  fi
+}
+
+show_oci_install_help
     export PATH="$HOME/bin:$PATH"
     log success "OCI CLI 설치 완료! 터미널을 재시작하거나 'export PATH=\"\$HOME/bin:\$PATH\"'를 실행하세요."
   else
