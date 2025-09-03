@@ -260,13 +260,6 @@ show_oci_install_help() {
 }
 
 show_oci_install_help
-    export PATH="$HOME/bin:$PATH"
-    log success "OCI CLI 설치 완료! 터미널을 재시작하거나 'export PATH=\"\$HOME/bin:\$PATH\"'를 실행하세요."
-  else
-    log fail "OCI CLI가 필요합니다. README의 설치 가이드를 참조하세요."
-    exit 1
-  fi
-fi
 
 # 기존 config.json 로드
 if [ -f "$CONFIG_FILE" ]; then
