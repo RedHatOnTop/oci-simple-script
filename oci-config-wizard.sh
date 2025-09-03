@@ -301,11 +301,11 @@ prompt_and_save() {
     log success "기존 OCI config 파일 발견: $OCI_CONFIG_FILE"
     
     # OCI config 파일에서 값 추출
-    local user_ocid=$(grep "^user=" "$OCI_CONFIG_FILE" | cut -d'=' -f2 | tr -d ' ')
-    local tenancy_ocid=$(grep "^tenancy=" "$OCI_CONFIG_FILE" | cut -d'=' -f2 | tr -d ' ')
-    local fingerprint=$(grep "^fingerprint=" "$OCI_CONFIG_FILE" | cut -d'=' -f2 | tr -d ' ')
-    local region=$(grep "^region=" "$OCI_CONFIG_FILE" | cut -d'=' -f2 | tr -d ' ')
-    local key_file=$(grep "^key_file=" "$OCI_CONFIG_FILE" | cut -d'=' -f2 | tr -d ' ')
+    user_ocid=$(grep "^user=" "$OCI_CONFIG_FILE" | cut -d'=' -f2 | tr -d ' ')
+    tenancy_ocid=$(grep "^tenancy=" "$OCI_CONFIG_FILE" | cut -d'=' -f2 | tr -d ' ')
+    fingerprint=$(grep "^fingerprint=" "$OCI_CONFIG_FILE" | cut -d'=' -f2 | tr -d ' ')
+    region=$(grep "^region=" "$OCI_CONFIG_FILE" | cut -d'=' -f2 | tr -d ' ')
+    key_file=$(grep "^key_file=" "$OCI_CONFIG_FILE" | cut -d'=' -f2 | tr -d ' ')
     
     # 물결표시 경로 확장
     key_file="${key_file/#\~/$HOME}"
@@ -362,11 +362,11 @@ fi
 log success "기존 OCI config 파일 발견: $OCI_CONFIG_FILE"
 
 # OCI config 파일에서 값 추출
-local user_ocid=$(grep "^user=" "$OCI_CONFIG_FILE" | cut -d'=' -f2 | tr -d ' ')
-local tenancy_ocid=$(grep "^tenancy=" "$OCI_CONFIG_FILE" | cut -d'=' -f2 | tr -d ' ')
-local fingerprint=$(grep "^fingerprint=" "$OCI_CONFIG_FILE" | cut -d'=' -f2 | tr -d ' ')
-local region=$(grep "^region=" "$OCI_CONFIG_FILE" | cut -d'=' -f2 | tr -d ' ')
-local key_file=$(grep "^key_file=" "$OCI_CONFIG_FILE" | cut -d'=' -f2 | tr -d ' ')
+user_ocid=$(grep "^user=" "$OCI_CONFIG_FILE" | cut -d'=' -f2 | tr -d ' ')
+tenancy_ocid=$(grep "^tenancy=" "$OCI_CONFIG_FILE" | cut -d'=' -f2 | tr -d ' ')
+fingerprint=$(grep "^fingerprint=" "$OCI_CONFIG_FILE" | cut -d'=' -f2 | tr -d ' ')
+region=$(grep "^region=" "$OCI_CONFIG_FILE" | cut -d'=' -f2 | tr -d ' ')
+key_file=$(grep "^key_file=" "$OCI_CONFIG_FILE" | cut -d'=' -f2 | tr -d ' ')
 
 # 물결표시 경로 확장
 key_file="${key_file/#\~/$HOME}"
