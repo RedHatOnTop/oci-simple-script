@@ -464,48 +464,166 @@ function tryLaunchInstance(interaction = null, manual = false) {
       errorMsg = `Command execution error: ${error.message}`;
       if (stderr) errorMsg += `\nStderr: ${stderr}`;
       
-      // Parse ServiceError response to extract message
-      try {
-        // First try to extract JSON from stderr
-        const jsonStart = stderr.indexOf('{');
-        const jsonEnd = stderr.lastIndexOf('}') + 1;
-        if (jsonStart >= 0 && jsonEnd > jsonStart) {
-          const jsonStr = stderr.substring(jsonStart, jsonEnd);
-          const errorData = JSON.parse(jsonStr);
-          if (errorData.message) {
-            errorMsg = `**Error:** ${errorData.message}`;
-            if (errorData.code) {
-              errorMsg = `**${errorData.code}:** ${errorData.message}`;
+      // Enhanced error parsing logic - extract message from response
+      const parseErrorResponse = (responseText) => {
+        try {
+          // First try to parse the entire response as JSON
+          try {
+            const errorData = JSON.parse(responseText);
+            return extractErrorInfo(errorData);
+          } catch (e) {
+            // If full parsing fails, try to find JSON objects
+          }
+          
+          // Try to find and parse JSON objects in the response
+          const jsonRegex = /\{(?:[^{}]|{[^{}]*})*\}/g;
+          let match;
+          while ((match = jsonRegex.exec(responseText)) !== null) {
+            try {
+              const errorData = JSON.parse(match[0]);
+              const result = extractErrorInfo(errorData);
+              if (result) return result;
+            } catch (parseError) {
+              continue; // Try next JSON match
             }
           }
+          return null;
+        } catch (error) {
+          return null;
         }
-      } catch (parseError) {
-        // If JSON parsing fails, check for specific error patterns
+      };
+      
+      const extractErrorInfo = (errorData) => {
+        // Check for various error message formats
+        if (errorData.message) {
+          return {
+            code: errorData.code || errorData.status || 'Error',
+            message: errorData.message,
+            details: errorData.details || errorData['opc-request-id']
+          };
+        }
+        
+        // Check for nested error objects
+        if (errorData.error && errorData.error.message) {
+          return {
+            code: errorData.error.code || errorData.error.status || 'Error',
+            message: errorData.error.message,
+            details: errorData.error.details || errorData['opc-request-id']
+          };
+        }
+        
+        // Check for OCI-specific error formats
+        if (errorData.serviceError && errorData.serviceError.message) {
+          return {
+            code: errorData.serviceError.code || 'ServiceError',
+            message: errorData.serviceError.message,
+            details: errorData.serviceError.details || errorData['opc-request-id']
+          };
+        }
+        
+        return null;
+      };
+      
+      // Try to parse error from both stderr and stdout
+      let parsedError = parseErrorResponse(stderr) || parseErrorResponse(stdout) || parseErrorResponse(combined);
+      
+      if (parsedError) {
+        errorMsg = `**${parsedError.code}:** ${parsedError.message}`;
+        if (parsedError.details) {
+          errorMsg += `\n**Request ID:** ${parsedError.details}`;
+        }
+      } else {
+        // Fallback to pattern matching for known error types
         if (combined.toLowerCase().includes('out of capacity')) {
           errorMsg = '**Out of Capacity:** No available resources in the selected availability domain';
         } else if (combined.toLowerCase().includes('limitexceeded')) {
           errorMsg = '**Limit Exceeded:** Always Free resource limit has been reached';
         } else if (combined.toLowerCase().includes('invalid')) {
           errorMsg = '**Invalid Configuration:** Please check your settings';
+        } else if (combined.toLowerCase().includes('insufficientauthorization')) {
+          errorMsg = '**Insufficient Authorization:** Check your API key permissions';
+        } else if (combined.toLowerCase().includes('notfound')) {
+          errorMsg = '**Resource Not Found:** Check your compartment and resource IDs';
+        } else if (combined.toLowerCase().includes('conflict')) {
+          errorMsg = '**Resource Conflict:** Resource name may already exist';
+        } else if (combined.toLowerCase().includes('quotaexceeded')) {
+          errorMsg = '**Quota Exceeded:** Service quota limit reached';
         }
       }
       
       // Add attempted command to error message
       errorMsg += `\n\n**Attempted Command:**\n\`\`\`bash\n${ociCommand}\n\`\`\``;
       
-    } else if (combined.toLowerCase().includes('out of capacity')) {
-      errorMsg = '**Out of Capacity:** No available resources in the selected availability domain';
-      errorMsg += `\n\n**Attempted Command:**\n\`\`\`bash\n${ociCommand}\n\`\`\``;
-    } else if (combined.toLowerCase().includes('invalid')) {
-      errorMsg = `**Configuration Error:** Please check your settings`;
-      errorMsg += `\n\n**Attempted Command:**\n\`\`\`bash\n${ociCommand}\n\`\`\``;
     } else if (combined.includes('"id"') && combined.includes('ocid1.instance')) {
       status = true;
       writeLog('Instance creation succeeded!');
     } else {
-      errorMsg = `**Unknown Response**`;
+      // Use enhanced parsing for non-error responses too
+      const parseErrorResponse = (responseText) => {
+        try {
+          // First try to parse the entire response as JSON
+          try {
+            const errorData = JSON.parse(responseText);
+            return extractErrorInfo(errorData);
+          } catch (e) {
+            // If full parsing fails, try to find JSON objects
+          }
+          
+          // Try to find and parse JSON objects in the response
+          const jsonRegex = /\{(?:[^{}]|{[^{}]*})*\}/g;
+          let match;
+          while ((match = jsonRegex.exec(responseText)) !== null) {
+            try {
+              const errorData = JSON.parse(match[0]);
+              const result = extractErrorInfo(errorData);
+              if (result) return result;
+            } catch (parseError) {
+              continue; // Try next JSON match
+            }
+          }
+          return null;
+        } catch (error) {
+          return null;
+        }
+      };
+      
+      const extractErrorInfo = (errorData) => {
+        if (errorData.message) {
+          return {
+            code: errorData.code || errorData.status || 'Error',
+            message: errorData.message,
+            details: errorData.details || errorData['opc-request-id']
+          };
+        }
+        if (errorData.error && errorData.error.message) {
+          return {
+            code: errorData.error.code || errorData.error.status || 'Error',
+            message: errorData.error.message,
+            details: errorData.error.details || errorData['opc-request-id']
+          };
+        }
+        return null;
+      };
+      
+      let parsedError = parseErrorResponse(combined);
+      
+      if (parsedError) {
+        errorMsg = `**${parsedError.code}:** ${parsedError.message}`;
+        if (parsedError.details) {
+          errorMsg += `\n**Request ID:** ${parsedError.details}`;
+        }
+      } else if (combined.toLowerCase().includes('out of capacity')) {
+        errorMsg = '**Out of Capacity:** No available resources in the selected availability domain';
+      } else if (combined.toLowerCase().includes('invalid')) {
+        errorMsg = '**Configuration Error:** Please check your settings';
+      } else {
+        errorMsg = `**Unknown Response**`;
+      }
+      
       errorMsg += `\n\n**Attempted Command:**\n\`\`\`bash\n${ociCommand}\n\`\`\``;
-      errorMsg += `\n\n**Response:**\n\`\`\`\n${combined}\n\`\`\``;
+      if (!parsedError) {
+        errorMsg += `\n\n**Response:**\n\`\`\`\n${combined}\n\`\`\``;
+      }
     }
     
     sendEmbed(interaction, status, errorMsg, manual);
