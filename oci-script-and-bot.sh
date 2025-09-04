@@ -446,9 +446,9 @@ function tryLaunchInstance(interaction = null, manual = false) {
     '--assign-public-ip', 'true',
     '--display-name', `oci-auto-instance-${Date.now()}`,
     '--image-id', `${ociConfig.IMAGE_ID}`,
-    '--shape-config', `{"ocpus":${ociConfig.shapeConfig.ocpus},"memoryInGBs":${ociConfig.shapeConfig.memoryInGBs}}`,
-    '--instance-options', `{"areLegacyImdsEndpointsDisabled":"false"}`,
-    '--availability-config', `{"isLiveMigrationPreferred":"true","recoveryAction":"RESTORE_INSTANCE"}`
+    '--shape-config', `'{"ocpus":${ociConfig.shapeConfig.ocpus}',"memoryInGBs":${ociConfig.shapeConfig.memoryInGBs}}'`,
+    '--instance-options', `'{"areLegacyImdsEndpointsDisabled":"false"}'`,
+    '--availability-config', `'{"isLiveMigrationPreferred":"true","recoveryAction":"RESTORE_INSTANCE"}'`
   ].join(' ');
 
   writeLog(`Executing: ${ociCommand}`);
