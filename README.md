@@ -1,104 +1,106 @@
 <div align="center">
 
 # 🚀 OCI Discord Bot
-### 완전 자동화 Always Free 인스턴스 생성기
+### Fully Automated Always Free Instance Creator
 
 <img src="https://img.shields.io/badge/OCI-Always_Free-orange?style=for-the-badge&logo=oracle" alt="OCI Always Free">
 <img src="https://img.shields.io/badge/Discord-Bot-5865F2?style=for-the-badge&logo=discord&logoColor=white" alt="Discord Bot">
 <img src="https://img.shields.io/badge/Bash-Automation-4EAA25?style=for-the-badge&logo=gnubash&logoColor=white" alt="Bash Automation">
 <img src="https://img.shields.io/badge/License-MIT-green?style=for-the-badge" alt="MIT License">
 
-**Oracle Cloud Infrastructure의 Always Free 인스턴스를 Discord에서 간편하게 생성하세요!**
+**Easily create Oracle Cloud Infrastructure Always Free instances from Discord!**
 
-[🚀 빠른 시작](#🛠️-빠른-시작) • [📖 사용법](#🎮-사용법) • [🔧 고급 설정](#🎨-고급-설정) • [🤝 기여하기](#🤝-기여하기)
+[🚀 Quick Start](#🛠️-quick-start) • [📖 Usage](#🎮-usage) • [🔧 Advanced Setup](#🎨-advanced-setup) • [🤝 Contributing](#🤝-contributing)
+
+**English** | [한국어](README_KR.md)
 
 </div>
 
 ---
 
-## 🎬 데모
+## 🎬 Demo
 
 <div align="center">
 
-### 📱 Discord Bot 명령어 데모
+### 📱 Discord Bot Commands Demo
 
 ```bash
-# Discord 채널에서 사용 예시
-/status                    # 봇 상태 및 인스턴스 현황 확인
-/launch                    # Always Free 인스턴스 즉시 생성
-/log count:5               # 최근 5회 실행 로그 조회
-/config                    # 현재 설정 정보 확인
+# Example usage in Discord channel
+/status                    # Check bot status and instance overview
+/launch                    # Instantly create Always Free instance
+/log count:5               # View last 5 execution logs
+/config                    # Check current configuration
 ```
 
-### 🧙‍♂️ 설정 마법사 실행 화면
+### 🧙‍♂️ Setup Wizard Execution Screen
 
 ```bash
 ╔══════════════════════════════════════════════════════════════════════════════╗
 ║                    🧙‍♂️ OCI Always Free Discord Bot                          ║
-║                              설정 마법사                                    ║
-║         Oracle Cloud Infrastructure Always Free 인스턴스 자동 생성         ║
+║                             Setup Wizard                                    ║
+║         Oracle Cloud Infrastructure Always Free Instance Auto Creator      ║
 ╚══════════════════════════════════════════════════════════════════════════════╝
 
-ℹ️ [12:34:56] 🎯 Always Free 특화: E2.1.Micro (2개), A1.Flex (4 OCPU, 24GB)
-ℹ️ [12:34:56] 🤖 Discord 통합: 슬래시 명령어, 실시간 모니터링
-ℹ️ [12:34:56] 🔧 완전 자동화: 기존 설정 인식, 실시간 검증
+ℹ️ [12:34:56] 🎯 Always Free Optimized: E2.1.Micro (2x), A1.Flex (4 OCPU, 24GB)
+ℹ️ [12:34:56] 🤖 Discord Integration: Slash commands, Real-time monitoring
+ℹ️ [12:34:56] 🔧 Full Automation: Auto-detect config, Real-time validation
 ```
 
-### 📊 Always Free 사용량 모니터링
+### 📊 Always Free Usage Monitoring
 
 ```bash
-📊 Always Free 사용량:
+📊 Always Free Usage:
   • Shape: VM.Standard.A1.Flex
-  • 사양: 2 OCPU, 12GB RAM
-  • A1 총 한도 대비: 2/4 OCPU, 12/24GB RAM
-  • 남은 자원: 2 OCPU, 12GB RAM
-  • 부트볼륨: 100/200GB (무료)
+  • Specs: 2 OCPU, 12GB RAM
+  • A1 Total Limit: 2/4 OCPU, 12/24GB RAM
+  • Remaining Resources: 2 OCPU, 12GB RAM
+  • Boot Volume: 100/200GB (Free)
 ```
 
 </div>
 
 ---
 
-## ✨ 특징
+## ✨ Features
 
 <table>
 <tr>
 <td width="50%">
 
-### 🎯 **Always Free 특화**
-- ✅ **E2.1.Micro** (2개까지)
+### 🎯 **Always Free Optimized**
+- ✅ **E2.1.Micro** (up to 2 instances)
 - ✅ **A1.Flex** (4 OCPU, 24GB RAM)
-- ✅ 부트볼륨 200GB 무료
-- ✅ 실시간 한도 체크
+- ✅ 200GB Boot Volume Free
+- ✅ Real-time limit checking
 
 </td>
 <td width="50%">
 
-### 🤖 **Discord 통합**
-- ✅ 슬래시 명령어 지원
-- ✅ 실시간 상태 모니터링
-- ✅ 로그 및 오류 알림
-- ✅ PM2 서비스 관리
+### 🤖 **Discord Integration**
+- ✅ Slash command support
+- ✅ Real-time status monitoring
+- ✅ Log and error notifications
+- ✅ PM2 service management
 
 </td>
 </tr>
 <tr>
 <td>
 
-### � **완전 자동화**
-- ✅ OCI CLI 자동 설치
-- ✅ 기존 config 자동 인식
-- ✅ 실시간 API 검증
-- ✅ 원클릭 설정
+### 🔧 **Full Automation**
+- ✅ Auto OCI CLI installation
+- ✅ Auto-detect existing config
+- ✅ Real-time API validation
+- ✅ One-click setup
 
 </td>
 <td>
 
-### 🎨 **사용자 친화적**
-- ✅ 컬러풀한 로그 출력
-- ✅ 이모지 기반 UI
-- ✅ 단계별 안내
-- ✅ 오류 자동 진단
+### 🎨 **User-Friendly**
+- ✅ Colorful log output
+- ✅ Emoji-based UI
+- ✅ Step-by-step guidance
+- ✅ Auto error diagnosis
 
 </td>
 </tr>
@@ -106,194 +108,194 @@
 
 ---
 
-## 🚀 핵심 기능
+## 🚀 Core Features
 
 <details>
-<summary><b>🎯 Always Free 최적화</b></summary>
+<summary><b>🎯 Always Free Optimization</b></summary>
 
-- **Shape 자동 필터링**: E2.1.Micro, A1.Flex만 표시
-- **한도 실시간 체크**: OCPU/RAM 사용량 자동 계산
-- **과금 방지**: Always Free 범위 초과시 경고
-- **사용량 대시보드**: 남은 자원 실시간 표시
+- **Shape Auto-filtering**: Shows only E2.1.Micro, A1.Flex
+- **Real-time limit check**: Auto-calculate OCPU/RAM usage
+- **Billing protection**: Warns when exceeding Always Free limits
+- **Usage dashboard**: Real-time display of remaining resources
 
 </details>
 
 <details>
-<summary><b>🤖 Discord Bot 명령어</b></summary>
+<summary><b>🤖 Discord Bot Commands</b></summary>
 
-| 명령어 | 기능 | 예시 |
+| Command | Function | Example |
 |:---:|:---|:---|
-| `/status` | 봇 상태 및 인스턴스 현황 | 업타임, 성공률, 최근 활동 |
-| `/launch` | 인스턴스 즉시 생성 | Always Free Shape 자동 선택 |
-| `/log` | 최근 실행 로그 조회 | 성공/실패 내역, 오류 진단 |
-| `/config` | 설정 정보 확인 | 현재 Shape, 지역, 사양 |
-| `/help` | 전체 명령어 안내 | 사용법 및 팁 |
+| `/status` | Bot status and instance overview | Uptime, success rate, recent activity |
+| `/launch` | Instant instance creation | Auto-select Always Free Shape |
+| `/log` | View recent execution logs | Success/failure history, error diagnosis |
+| `/config` | Check configuration info | Current Shape, region, specs |
+| `/help` | All commands guide | Usage and tips |
 
 </details>
 
 <details>
-<summary><b>🔧 스마트 설정 마법사</b></summary>
+<summary><b>🔧 Smart Setup Wizard</b></summary>
 
-- **자동 환경 감지**: 기존 OCI config 파일 자동 로드
-- **실시간 API 검증**: 사용 가능한 Shape/Image 실시간 조회
-- **사양 맞춤 설정**: OCPU/RAM 조합 자동 검증
-- **한글 UI**: 직관적인 한국어 인터페이스
+- **Auto environment detection**: Auto-load existing OCI config files
+- **Real-time API validation**: Real-time query of available Shape/Image
+- **Custom spec configuration**: Auto-validate OCPU/RAM combinations
+- **Intuitive UI**: User-friendly interface
 
 </details>  
 
 ---
 
-## 🛠️ 빠른 시작
+## 🛠️ Quick Start
 
-### 1️⃣ 사전 준비
+### 1️⃣ Prerequisites
 
 <table>
 <tr>
 <td width="33%">
 
-#### 🔑 **OCI 계정**
-- Oracle Cloud 무료 계정
-- Always Free 자격 확인
-- 결제카드 등록 (무료)
+#### 🔑 **OCI Account**
+- Oracle Cloud free account
+- Always Free eligibility confirmed
+- Credit card registration (free)
 
 </td>
 <td width="33%">
 
 #### 🤖 **Discord Bot**
 - [Developer Portal](https://discord.com/developers/applications)
-- Bot Token 발급
-- 서버 초대 링크 생성
+- Bot Token generation
+- Server invite link creation
 
 </td>
 <td width="33%">
 
-#### 🖥️ **서버 환경**
+#### 🖥️ **Server Environment**
 - Linux (Ubuntu/CentOS)
 - Bash 4.0+
-- curl, jq 설치
+- curl, jq installed
 
 </td>
 </tr>
 </table>
 
-### 2️⃣ OCI API 키 설정
+### 2️⃣ OCI API Key Setup
 
 ```bash
-# 🔐 API 키 쌍 생성
+# 🔐 Generate API key pair
 mkdir -p ~/.oci
 openssl genrsa -out ~/.oci/oci_api_key.pem 2048
 openssl rsa -pubout -in ~/.oci/oci_api_key.pem -out ~/.oci/oci_api_key_public.pem
 chmod 600 ~/.oci/oci_api_key.pem
 
-# 📋 공개키 내용 복사 (OCI 콘솔에 등록용)
+# 📋 Copy public key content (for OCI Console registration)
 cat ~/.oci/oci_api_key_public.pem
 ```
 
-> **🔗 OCI 콘솔 등록 경로**  
-> `Identity & Security` → `Users` → `본인 계정` → `API Keys` → `Add API Key`
+> **🔗 OCI Console Registration Path**  
+> `Identity & Security` → `Users` → `Your Account` → `API Keys` → `Add API Key`
 
-### 3️⃣ OCI CLI 설정
+### 3️⃣ OCI CLI Setup
 
 ```bash
-# 🚀 OCI CLI 설치 (자동)
+# 🚀 Install OCI CLI (automatic)
 bash -c "$(curl -L https://raw.githubusercontent.com/oracle/oci-cli/master/scripts/install/install.sh)"
 
-# 📝 대화형 설정 (추천)
+# 📝 Interactive setup (recommended)
 oci setup config
 
-# 🔍 설정 확인
+# 🔍 Verify configuration
 oci iam region list --output table
 ```
 
-### 4️⃣ 마법사 실행
+### 4️⃣ Run Setup Wizard
 
 ```bash
-# 📥 스크립트 다운로드
+# 📥 Download scripts
 git clone https://github.com/RedHatOnTop/oci-simple-script.git
 cd oci-simple-script
 
-# 🧙‍♂️ 설정 마법사 실행
+# 🧙‍♂️ Run setup wizard
 bash oci-config-wizard.sh
 ```
 
 <div align="center">
 
-**🎉 모든 설정이 완료되면 `config.json`이 자동 생성됩니다!**
+**🎉 Once all setup is complete, `config.json` will be auto-generated!**
 
 </div>
 
-### 5️⃣ Discord Bot 실행
+### 5️⃣ Run Discord Bot
 
 ```bash
-# 🤖 봇 시작
+# 🤖 Start bot
 bash oci-script-and-bot.sh
 
-# 📊 상태 확인
+# 📊 Check status
 pm2 status
 pm2 logs oci-discord-bot
 ```
 
 ---
 
-## 🎮 사용법
+## 🎮 Usage
 
-### Discord 명령어
+### Discord Commands
 
 <div align="center">
 
-| 명령어 | 아이콘 | 설명 | 결과 |
+| Command | Icon | Description | Result |
 |:---:|:---:|:---|:---|
-| `/status` | 📊 | **봇 상태 확인** | 업타임, 성공률, 최근 활동 |
-| `/launch` | 🚀 | **인스턴스 생성** | Always Free Shape 자동 선택 |
-| `/log` | 📋 | **로그 조회** | 최근 N회 실행 내역 |
-| `/config` | ⚙️ | **설정 확인** | 현재 Shape, 지역, 사양 |
-| `/stop` | ⏹️ | **자동 생성 중지** | 봇 일시정지 |
-| `/start` | ▶️ | **자동 생성 재시작** | 봇 재개 |
-| `/help` | ❓ | **도움말** | 전체 명령어 안내 |
+| `/status` | 📊 | **Check bot status** | Uptime, success rate, recent activity |
+| `/launch` | 🚀 | **Create instance** | Auto-select Always Free Shape |
+| `/log` | 📋 | **View logs** | Recent N execution history |
+| `/config` | ⚙️ | **Check configuration** | Current Shape, region, specs |
+| `/stop` | ⏹️ | **Stop auto creation** | Pause bot |
+| `/start` | ▶️ | **Restart auto creation** | Resume bot |
+| `/help` | ❓ | **Help** | All commands guide |
 
 </div>
 
-### Always Free 사용량 모니터링
+### Always Free Usage Monitoring
 
 ```bash
-# 🔍 현재 인스턴스 확인
+# 🔍 Check current instances
 oci compute instance list --compartment-id $COMPARTMENT_ID --output table
 
-# 📊 A1.Flex 사용량 조회
+# 📊 Check A1.Flex usage
 oci limits resource-availability get --compartment-id $COMPARTMENT_ID \
     --service-name compute --limit-name vm-standard-a1-core-count
 ```
 
 ---
 
-## 🎨 고급 설정
+## 🎨 Advanced Setup
 
-### 🎯 Always Free 최적화
+### 🎯 Always Free Optimization
 
 <details>
-<summary><b>💡 Shape 선택 가이드</b></summary>
+<summary><b>💡 Shape Selection Guide</b></summary>
 
-| Shape | OCPU | RAM | 인스턴스 | 용도 | 비고 |
+| Shape | OCPU | RAM | Instances | Use Case | Notes |
 |:---:|:---:|:---:|:---:|:---|:---|
-| **E2.1.Micro** | 1 | 1GB | 2개 | 경량 웹서버, 봇 | AMD 기반 |
-| **A1.Flex** | 1-4 | 6-24GB | 1-4개 | 개발서버, 학습 | ARM 기반 |
+| **E2.1.Micro** | 1 | 1GB | 2 | Lightweight web servers, bots | AMD-based |
+| **A1.Flex** | 1-4 | 6-24GB | 1-4 | Development servers, learning | ARM-based |
 
-**💰 비용 계산기:**
-- E2.1.Micro: 무료 (2개까지)
-- A1.Flex: 총 4 OCPU, 24GB RAM 무료
-- 부트볼륨: 200GB 무료
+**💰 Cost Calculator:**
+- E2.1.Micro: Free (up to 2)
+- A1.Flex: Total 4 OCPU, 24GB RAM free
+- Boot Volume: 200GB free
 
 </details>
 
 <details>
-<summary><b>🔧 커스텀 SSH 키</b></summary>
+<summary><b>🔧 Custom SSH Keys</b></summary>
 
 ```bash
-# 🔑 기존 SSH 키 사용
+# 🔑 Use existing SSH keys
 export CUSTOM_PRIVATE_KEY_PATH="/path/to/your/private_key"
 export CUSTOM_PUBLIC_KEY_PATH="/path/to/your/public_key.pub"
 
-# 🔐 새 SSH 키 생성
+# 🔐 Generate new SSH keys
 ssh-keygen -t rsa -b 2048 -f ~/.ssh/oci_key -N ""
 export CUSTOM_PRIVATE_KEY_PATH="$HOME/.ssh/oci_key"
 export CUSTOM_PUBLIC_KEY_PATH="$HOME/.ssh/oci_key.pub"
@@ -303,67 +305,91 @@ export CUSTOM_PUBLIC_KEY_PATH="$HOME/.ssh/oci_key.pub"
 
 ---
 
-## � 트러블슈팅
+## 🔧 Troubleshooting
 
 <details>
-<summary><b>🚨 자주 발생하는 문제</b></summary>
+<summary><b>🚨 Common Issues</b></summary>
 
-### ❌ OCI CLI 설치 오류
+### ❌ OCI CLI Installation Error
 
 ```bash
-# 🔍 설치 확인
+# 🔍 Check installation
 oci --version
 
-# 🔧 PATH 설정 확인
+# 🔧 Check PATH configuration
 echo $PATH | grep -o "$HOME/bin"
 
-# 🔄 재설치
+# 🔄 Reinstall
 curl -L https://raw.githubusercontent.com/oracle/oci-cli/master/scripts/install/install.sh | bash
 ```
 
-### ❌ API 키 권한 오류
+### ❌ OCI CLI Not Accessible with sudo
+
+When OCI CLI is installed via symlink in user path, it may not be accessible with sudo.
 
 ```bash
-# 🔐 권한 확인 및 수정
+# 🔍 Check OCI CLI installation location
+which oci
+# Result: /home/user/bin/oci
+
+# 🔧 Create symlink in system path
+sudo ln -s $(which oci) /usr/local/bin/oci
+
+# ✅ Verify sudo access
+sudo oci --version
+```
+
+**Automatic Solution:**
+```bash
+# Script handles this automatically, but manual setup is also possible
+sudo ln -s $HOME/bin/oci /usr/local/bin/oci
+sudo ln -s $HOME/.local/bin/oci /usr/local/bin/oci
+sudo ln -s $HOME/lib/oracle-cli/bin/oci /usr/local/bin/oci
+```
+
+### ❌ API Key Permission Error
+
+```bash
+# 🔐 Check and fix permissions
 ls -la ~/.oci/
 chmod 600 ~/.oci/oci_api_key.pem
 chmod 644 ~/.oci/oci_api_key_public.pem
 
-# 🔍 키 유효성 검사
+# 🔍 Validate key
 oci iam region list --auth api_key
 ```
 
-### ❌ Discord Bot Token 오류
+### ❌ Discord Bot Token Error
 
 ```bash
-# 🔍 토큰 확인
+# 🔍 Check token
 grep -o "discord_token" config.json
 
-# 🔧 토큰 재설정
+# 🔧 Reset token
 bash oci-config-wizard.sh
-# Discord 설정 부분만 재실행
+# Re-run Discord configuration section only
 ```
 
-### ❌ "Out of Capacity" 오류
+### ❌ "Out of Capacity" Error
 
-- **🔄 다른 지역 시도**: `ap-tokyo-1`, `ap-mumbai-1`
-- **⏰ 시간대 변경**: 새벽 시간대 추천
-- **🎯 Shape 변경**: E2.1.Micro → A1.Flex
+- **🔄 Try different regions**: `ap-tokyo-1`, `ap-mumbai-1`
+- **⏰ Change time zone**: Recommended during early morning hours
+- **🎯 Change Shape**: E2.1.Micro → A1.Flex
 
 </details>
 
 <details>
-<summary><b>📊 상태 확인 명령어</b></summary>
+<summary><b>📊 Status Check Commands</b></summary>
 
 ```bash
-# 🤖 봇 상태
+# 🤖 Bot status
 pm2 status
 pm2 logs oci-discord-bot --lines 50
 
-# 📊 인스턴스 목록
+# 📊 Instance list
 oci compute instance list --compartment-id $COMPARTMENT_ID --output table
 
-# 💰 Always Free 사용량
+# 💰 Always Free usage
 oci limits resource-availability get \
     --compartment-id $COMPARTMENT_ID \
     --service-name compute \
@@ -373,16 +399,16 @@ oci limits resource-availability get \
 </details>
 
 <details>
-<summary><b>🔧 설정 파일 확인</b></summary>
+<summary><b>🔧 Configuration File Check</b></summary>
 
 ```bash
-# 📄 OCI 설정
+# 📄 OCI configuration
 cat ~/.oci/config
 
-# 📋 봇 설정
+# 📋 Bot configuration
 cat config.json | jq .
 
-# 📝 로그 파일
+# 📝 Log file
 tail -f oci_bot.log
 ```
 
@@ -390,57 +416,57 @@ tail -f oci_bot.log
 
 ---
 
-## � 참고 자료
+## 📚 References
 
 <div align="center">
 
-### 🔗 유용한 링크
+### 🔗 Useful Links
 
-| 카테고리 | 링크 | 설명 |
+| Category | Link | Description |
 |:---:|:---|:---|
-| **🏛️ 공식** | [Oracle Cloud 콘솔](https://cloud.oracle.com) | OCI 관리 콘솔 |
-| **📖 문서** | [OCI CLI 가이드](https://docs.oracle.com/en-us/iaas/Content/API/SDKDocs/cliinstall.htm) | 공식 설치 가이드 |
-| **🤖 봇** | [Discord Developer](https://discord.com/developers/applications) | 봇 생성 및 관리 |
-| **💡 팁** | [Out of Capacity 해결](https://hitrov.medium.com/resolving-oracle-cloud-out-of-capacity-issue-and-getting-free-vps-with-4-arm-cores-24gb-of-a3d7e6a027a8) | 용량 부족 해결법 |
+| **🏛️ Official** | [Oracle Cloud Console](https://cloud.oracle.com) | OCI Management Console |
+| **📖 Documentation** | [OCI CLI Guide](https://docs.oracle.com/en-us/iaas/Content/API/SDKDocs/cliinstall.htm) | Official Installation Guide |
+| **🤖 Bot** | [Discord Developer](https://discord.com/developers/applications) | Bot Creation and Management |
+| **💡 Tips** | [Out of Capacity Solution](https://hitrov.medium.com/resolving-oracle-cloud-out-of-capacity-issue-and-getting-free-vps-with-4-arm-cores-24gb-of-a3d7e6a027a8) | Capacity shortage solution |
 
 </div>
 
-### 🎓 추천 학습 자료
+### 🎓 Recommended Learning Resources
 
-- **OCI 기초**: [Oracle Cloud Infrastructure 시작하기](https://docs.oracle.com/en-us/iaas/Content/GSG/Concepts/baremetalintro.htm)
-- **Discord.js**: [공식 가이드](https://discordjs.guide/)
-- **PM2**: [프로세스 관리 가이드](https://pm2.keymetrics.io/docs/)
+- **OCI Basics**: [Getting Started with Oracle Cloud Infrastructure](https://docs.oracle.com/en-us/iaas/Content/GSG/Concepts/baremetalintro.htm)
+- **Discord.js**: [Official Guide](https://discordjs.guide/)
+- **PM2**: [Process Management Guide](https://pm2.keymetrics.io/docs/)
 
 ---
 
-## 🤝 기여하기
+## 🤝 Contributing
 
 <div align="center">
 
-### 🙋‍♂️ 참여 방법
+### 🙋‍♂️ How to Participate
 
 <table>
 <tr>
 <td width="33%" align="center">
 
-**🐛 버그 리포트**  
-발견한 문제를 알려주세요
+**🐛 Bug Reports**  
+Let us know about issues you find
 
-[Issue 생성](https://github.com/RedHatOnTop/oci-simple-script/issues)
+[Create Issue](https://github.com/RedHatOnTop/oci-simple-script/issues)
 
 </td>
 <td width="33%" align="center">
 
-**💡 기능 제안**  
-새로운 아이디어를 공유하세요
+**💡 Feature Requests**  
+Share your new ideas
 
 [Feature Request](https://github.com/RedHatOnTop/oci-simple-script/issues)
 
 </td>
 <td width="33%" align="center">
 
-**🔧 코드 기여**  
-직접 개선사항을 작성하세요
+**🔧 Code Contributions**  
+Write improvements yourself
 
 [Pull Request](https://github.com/RedHatOnTop/oci-simple-script/pulls)
 
@@ -450,94 +476,27 @@ tail -f oci_bot.log
 
 </div>
 
-### 📋 기여 가이드라인
+### 📋 Contribution Guidelines
 
-1. **🍴 Fork** 이 저장소를 본인 계정으로 포크
-2. **🌿 Branch** 새로운 기능 브랜치 생성
-3. **💻 Code** 개선사항 작성 및 테스트
-4. **📝 Commit** 명확한 커밋 메시지 작성
-5. **🚀 PR** Pull Request 생성
-
----
-
-<div align="center">
-
-## 📄 라이선스
-
-**MIT License** - 자유롭게 사용, 수정, 배포하세요!
-
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+1. **🍴 Fork** this repository to your account
+2. **🌿 Branch** Create a new feature branch
+3. **💻 Code** Write improvements and test
+4. **📝 Commit** Write clear commit messages
+5. **🚀 PR** Create Pull Request
 
 ---
 
 <div align="center">
 
-### 📊 성능 지표
+## 📄 License
 
-| 지표 | Always Free 한도 | 설명 |
-|:---:|:---:|:---|
-| **E2.1.Micro** | 2개 인스턴스 | AMD EPYC, 1 OCPU, 1GB RAM |
-| **A1.Flex** | 4 OCPU, 24GB | ARM Ampere, 유연한 사양 설정 |
-| **부트볼륨** | 200GB | Block Volume, 고성능 SSD |
-| **아웃바운드** | 10TB/월 | 데이터 전송 무료 |
-| **업타임** | 744시간/월 | 24×31일 무제한 가동 |
-
-### 🏆 추천 구성
-
-<table>
-<tr>
-<td align="center">
-
-**🚀 고성능 서버**
-```bash
-Shape: A1.Flex
-OCPU: 4개
-RAM: 24GB
-스토리지: 200GB
-```
-*개발서버, AI/ML, 데이터베이스*
-
-</td>
-<td align="center">
-
-**⚖️ 균형잡힌 구성**
-```bash
-Shape: A1.Flex  
-OCPU: 2개
-RAM: 12GB
-스토리지: 100GB
-```
-*웹서버, API 서버, 미디어 서버*
-
-</td>
-<td align="center">
-
-**💾 경량화 서버**
-```bash
-Shape: E2.1.Micro
-OCPU: 1개  
-RAM: 1GB
-스토리지: 50GB
-```
-*봇, 모니터링, 프록시*
-
-</td>
-</tr>
-</table>
-
-</div>
-
----
-
-## 📄 라이선스
-
-**MIT License** - 자유롭게 사용, 수정, 배포하세요!
+**MIT License** - Feel free to use, modify, and distribute!
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 ---
 
-### 🌟 이 프로젝트가 도움이 되었다면 Star를 눌러주세요!
+### 🌟 If this project helped you, please give it a Star!
 
 **Made with ❤️ for the Oracle Cloud Always Free Community**
 
