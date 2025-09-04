@@ -466,17 +466,16 @@ function tryLaunchInstance(interaction = null, manual = false) {
       
       // Parse ServiceError response to extract message
       try {
-        // Try to parse stderr as JSON for ServiceError
-        const lines = stderr.split('\n');
-        for (const line of lines) {
-          if (line.trim().startsWith('{') && line.includes('ServiceError')) {
-            const errorData = JSON.parse(line);
-            if (errorData.message) {
-              errorMsg = `**Error:** ${errorData.message}`;
-              if (errorData.code) {
-                errorMsg = `**${errorData.code}:** ${errorData.message}`;
-              }
-              break;
+        // First try to extract JSON from stderr
+        const jsonStart = stderr.indexOf('{');
+        const jsonEnd = stderr.lastIndexOf('}') + 1;
+        if (jsonStart >= 0 && jsonEnd > jsonStart) {
+          const jsonStr = stderr.substring(jsonStart, jsonEnd);
+          const errorData = JSON.parse(jsonStr);
+          if (errorData.message) {
+            errorMsg = `**Error:** ${errorData.message}`;
+            if (errorData.code) {
+              errorMsg = `**${errorData.code}:** ${errorData.message}`;
             }
           }
         }
