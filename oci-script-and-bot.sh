@@ -461,17 +461,51 @@ function tryLaunchInstance(interaction = null, manual = false) {
     let errorMsg = null;
     
     if (error) {
-      errorMsg = `명령어 실행 오류: ${error.message}`;
+      errorMsg = `Command execution error: ${error.message}`;
       if (stderr) errorMsg += `\nStderr: ${stderr}`;
+      
+      // Parse ServiceError response to extract message
+      try {
+        // First try to extract JSON from stderr
+        const jsonStart = stderr.indexOf('{');
+        const jsonEnd = stderr.lastIndexOf('}') + 1;
+        if (jsonStart >= 0 && jsonEnd > jsonStart) {
+          const jsonStr = stderr.substring(jsonStart, jsonEnd);
+          const errorData = JSON.parse(jsonStr);
+          if (errorData.message) {
+            errorMsg = `**Error:** ${errorData.message}`;
+            if (errorData.code) {
+              errorMsg = `**${errorData.code}:** ${errorData.message}`;
+            }
+          }
+        }
+      } catch (parseError) {
+        // If JSON parsing fails, check for specific error patterns
+        if (combined.toLowerCase().includes('out of capacity')) {
+          errorMsg = '**Out of Capacity:** No available resources in the selected availability domain';
+        } else if (combined.toLowerCase().includes('limitexceeded')) {
+          errorMsg = '**Limit Exceeded:** Always Free resource limit has been reached';
+        } else if (combined.toLowerCase().includes('invalid')) {
+          errorMsg = '**Invalid Configuration:** Please check your settings';
+        }
+      }
+      
+      // Add attempted command to error message
+      errorMsg += `\n\n**Attempted Command:**\n\`\`\`bash\n${ociCommand}\n\`\`\``;
+      
     } else if (combined.toLowerCase().includes('out of capacity')) {
-      errorMsg = '용량 부족 (Out of Capacity)';
+      errorMsg = '**Out of Capacity:** No available resources in the selected availability domain';
+      errorMsg += `\n\n**Attempted Command:**\n\`\`\`bash\n${ociCommand}\n\`\`\``;
     } else if (combined.toLowerCase().includes('invalid')) {
-      errorMsg = `설정 오류: ${combined}`;
+      errorMsg = `**Configuration Error:** Please check your settings`;
+      errorMsg += `\n\n**Attempted Command:**\n\`\`\`bash\n${ociCommand}\n\`\`\``;
     } else if (combined.includes('"id"') && combined.includes('ocid1.instance')) {
       status = true;
       writeLog('Instance creation succeeded!');
     } else {
-      errorMsg = `알 수 없는 응답: ${combined}`;
+      errorMsg = `**Unknown Response**`;
+      errorMsg += `\n\n**Attempted Command:**\n\`\`\`bash\n${ociCommand}\n\`\`\``;
+      errorMsg += `\n\n**Response:**\n\`\`\`\n${combined}\n\`\`\``;
     }
     
     sendEmbed(interaction, status, errorMsg, manual);
