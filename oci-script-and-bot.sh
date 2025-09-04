@@ -438,14 +438,14 @@ function tryLaunchInstance(interaction = null, manual = false) {
   // config.json 기반 OCI 명령어 구성
   const ociCommand = [
     'oci compute instance launch',
-    '--availability-domain', `"${ociConfig.AVAILABILITY_DOMAIN}"`,
-    '--compartment-id', `"${ociConfig.COMPARTMENT_OCID}"`,
-    '--shape', `"${ociConfig.SHAPE}"`,
-    '--subnet-id', `"${ociConfig.SUBNET_ID}"`,
+    '--availability-domain', `${ociConfig.AVAILABILITY_DOMAIN}`,
+    '--compartment-id', `${ociConfig.COMPARTMENT_OCID}`,
+    '--shape', `${ociConfig.SHAPE}`,
+    '--subnet-id', `${ociConfig.SUBNET_ID}`,
     '--assign-private-dns-record', 'true',
     '--assign-public-ip', 'true',
-    '--display-name', `"oci-auto-instance-${Date.now()}"`,
-    '--image-id', `"${ociConfig.IMAGE_ID}"`,
+    '--display-name', `oci-auto-instance-${Date.now()}`,
+    '--image-id', `${ociConfig.IMAGE_ID}`,
     '--shape-config', `'{"ocpus":${ociConfig.shapeConfig.ocpus},"memoryInGBs":${ociConfig.shapeConfig.memoryInGBs}}'`,
     '--instance-options', `'{"areLegacyImdsEndpointsDisabled":false}'`,
     '--availability-config', `'{"isLiveMigrationPreferred":true,"recoveryAction":"RESTORE_INSTANCE"}'`
