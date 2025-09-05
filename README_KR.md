@@ -129,6 +129,11 @@
 | `/launch` | 인스턴스 즉시 생성 | Always Free Shape 자동 선택 |
 | `/log` | 최근 실행 로그 조회 | 성공/실패 내역, 오류 진단 |
 | `/config` | 설정 정보 확인 | 현재 Shape, 지역, 사양 |
+| `/schedule` | 생성 간격 설정 | 3-60분 (기본값: 5분) |
+| `/stats` | 상세 통계 분석 | 성공률, 기간별 분석 |
+| `/instances` | 인스턴스 목록 | 실행/중지 인스턴스 현황 |
+| `/resources` | 자원 사용량 | Always Free 한도 및 사용량 |
+| `/alert` | 알림 설정 | 알림 구성 |
 | `/help` | 전체 명령어 안내 | 사용법 및 팁 |
 
 </details>
@@ -251,6 +256,11 @@ pm2 logs oci-discord-bot
 | `/config` | ⚙️ | **설정 확인** | 현재 Shape, 지역, 사양 |
 | `/stop` | ⏹️ | **자동 생성 중지** | 봇 일시정지 |
 | `/start` | ▶️ | **자동 생성 재시작** | 봇 재개 |
+| `/schedule` | ⏰ | **생성 간격 설정** | 3-60분 (기본값: 5분) |
+| `/stats` | 📊 | **상세 통계** | 성공률, 기간별 분석 |
+| `/instances` | 🖥️ | **인스턴스 목록** | 실행/중지 인스턴스 현황 |
+| `/resources` | 💰 | **자원 사용량** | Always Free 한도 및 사용량 |
+| `/alert` | 🔔 | **알림 설정** | 알림 구성 |
 | `/help` | ❓ | **도움말** | 전체 명령어 안내 |
 
 </div>
@@ -265,6 +275,22 @@ oci compute instance list --compartment-id $COMPARTMENT_ID --output table
 oci limits resource-availability get --compartment-id $COMPARTMENT_ID \
     --service-name compute --limit-name vm-standard-a1-core-count
 ```
+
+### ⚡ v2.0 새로운 기능
+
+<div align="center">
+
+| 기능 | 설명 | 장점 |
+|:---|:---|:---|
+| **🎯 스마트 간격** | 기본 5분 시도 | 더 빠른 인스턴스 확보 |
+| **⚙️ 유연한 타이밍** | `/schedule`로 3-60분 범위 | 수요에 따른 맞춤 설정 |
+| **🌐 다국어 지원** | 영어/한국어 지원 | 더 나은 접근성 |
+| **🔧 오류 복구** | 명령어 오류 처리 개선 | 더 안정적인 동작 |
+| **📊 강화된 통계** | 상세 성공률 분석 | 더 나은 모니터링 |
+
+</div>
+
+> **💡 프로 팁**: 수요가 높은 시간대엔 `/schedule 3`, 수요가 낮은 시간대엔 `/schedule 30`을 사용하여 성공률을 최적화하세요.
 
 ---
 
@@ -299,6 +325,36 @@ export CUSTOM_PUBLIC_KEY_PATH="/path/to/your/public_key.pub"
 ssh-keygen -t rsa -b 2048 -f ~/.ssh/oci_key -N ""
 export CUSTOM_PRIVATE_KEY_PATH="$HOME/.ssh/oci_key"
 export CUSTOM_PUBLIC_KEY_PATH="$HOME/.ssh/oci_key.pub"
+```
+
+</details>
+
+<details>
+<summary><b>🌐 언어 설정</b></summary>
+
+봇은 영어와 한국어 인터페이스를 모두 지원합니다. `config.json`에서 설정하세요:
+
+```json
+{
+  "LANGUAGE": "ko",  // "en": 영어, "ko": 한국어
+  // ... 기타 설정 옵션
+}
+```
+
+**언어 기능:**
+- 🎯 선택한 언어로 Discord 명령어 설명
+- 📝 선택한 언어로 봇 응답 메시지
+- 🔧 오류 메시지 및 도움말 텍스트 현지화
+- 🚀 매끄러운 전환 - config 편집 후 재시작만으로 변경
+
+**언어 변경:**
+```bash
+# config.json 편집
+nano config.json
+# "LANGUAGE": "ko"를 "LANGUAGE": "en"으로 변경
+
+# 봇 재시작
+pm2 restart oci-discord-bot
 ```
 
 </details>

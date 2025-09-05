@@ -251,6 +251,11 @@ pm2 logs oci-discord-bot
 | `/config` | ⚙️ | **Check configuration** | Current Shape, region, specs |
 | `/stop` | ⏹️ | **Stop auto creation** | Pause bot |
 | `/start` | ▶️ | **Restart auto creation** | Resume bot |
+| `/schedule` | ⏰ | **Set creation interval** | 3-60 minutes (default: 5 min) |
+| `/stats` | 📊 | **Detailed statistics** | Success rate, period analysis |
+| `/instances` | 🖥️ | **List instances** | Running/stopped instance overview |
+| `/resources` | 💰 | **Resource usage** | Always Free limits and usage |
+| `/alert` | 🔔 | **Notification settings** | Configure alerts |
 | `/help` | ❓ | **Help** | All commands guide |
 
 </div>
@@ -265,6 +270,22 @@ oci compute instance list --compartment-id $COMPARTMENT_ID --output table
 oci limits resource-availability get --compartment-id $COMPARTMENT_ID \
     --service-name compute --limit-name vm-standard-a1-core-count
 ```
+
+### ⚡ New Features in v2.0
+
+<div align="center">
+
+| Feature | Description | Benefit |
+|:---|:---|:---|
+| **🎯 Smart Interval** | Default 5-minute attempts | Faster instance acquisition |
+| **⚙️ Flexible Timing** | 3-60 minute range via `/schedule` | Customizable based on demand |
+| **🌐 Multi-language** | English/Korean support | Better accessibility |
+| **🔧 Error Recovery** | Improved command error handling | More stable operation |
+| **📊 Enhanced Stats** | Detailed success rate analysis | Better monitoring |
+
+</div>
+
+> **💡 Pro Tip**: Use `/schedule 3` during high-demand periods and `/schedule 30` during low-demand periods to optimize success rates.
 
 ---
 
@@ -299,6 +320,36 @@ export CUSTOM_PUBLIC_KEY_PATH="/path/to/your/public_key.pub"
 ssh-keygen -t rsa -b 2048 -f ~/.ssh/oci_key -N ""
 export CUSTOM_PRIVATE_KEY_PATH="$HOME/.ssh/oci_key"
 export CUSTOM_PUBLIC_KEY_PATH="$HOME/.ssh/oci_key.pub"
+```
+
+</details>
+
+<details>
+<summary><b>🌐 Language Configuration</b></summary>
+
+The bot supports both English and Korean interfaces. Configure in `config.json`:
+
+```json
+{
+  "LANGUAGE": "en",  // "en" for English, "ko" for Korean
+  // ... other config options
+}
+```
+
+**Language Features:**
+- 🎯 Discord command descriptions in chosen language
+- 📝 Bot response messages in chosen language  
+- 🔧 Error messages and help text localized
+- 🚀 Seamless switching - just edit config and restart
+
+**Change Language:**
+```bash
+# Edit config.json
+nano config.json
+# Change "LANGUAGE": "ko" to "LANGUAGE": "en"
+
+# Restart bot
+pm2 restart oci-discord-bot
 ```
 
 </details>
