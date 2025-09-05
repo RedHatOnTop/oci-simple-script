@@ -362,8 +362,87 @@ let autoLaunch = true;
 let lastResults = [];
 const LOG_FILE = './oci_bot.log';
 
+// 🌐 언어 지원 시스템
+const LANG = ociConfig.LANGUAGE || 'ko';
+
+const translations = {
+  ko: {
+    // Discord Bot 명령어 설명
+    status_desc: '📊 봇 상태 및 인스턴스 현황 확인',
+    launch_desc: '🚀 Always Free 인스턴스 즉시 생성',
+    log_desc: '📋 최근 실행 로그 조회',
+    log_count_desc: '조회할 로그 개수',
+    stop_desc: '⏹️ 자동 인스턴스 생성 중지',
+    start_desc: '▶️ 자동 인스턴스 생성 시작',
+    config_desc: '⚙️ 현재 OCI 설정 확인',
+    stats_desc: '📊 상세 통계 및 성공률 분석',
+    instances_desc: '🖥️ 현재 실행 중인 인스턴스 목록 조회',
+    resources_desc: '💰 Always Free 자원 사용량 조회',
+    schedule_desc: '⏰ 자동 생성 스케줄 설정',
+    alert_desc: '🔔 알림 설정 관리',
+    help_desc: '❓ 사용 가능한 명령어 안내',
+    
+    // 메시지
+    bot_status: '🤖 OCI 자동화 봇 상태',
+    uptime: '⌛ 업타임',
+    total_attempts: '🔢 총 시도 횟수',
+    auto_creation: '🔄 자동 생성',
+    enabled: '🟢 활성화',
+    disabled: '🔴 비활성화',
+    recent_result: '📊 최근 결과',
+    success: '✅ 성공',
+    failed: '❌ 실패',
+    stopped: '⏹️ 자동 인스턴스 생성이 중지되었습니다.',
+    started: '▶️ 자동 인스턴스 생성이 시작되었습니다.',
+    already_active: '🔄 이미 자동 생성이 활성화되어 있습니다.',
+    no_logs: '📜 아직 시도 로그가 없습니다.',
+    command_error: '❌ 명령어 실행 중 오류가 발생했습니다.',
+    schedule_changed: '⏰ 스케줄 설정 변경',
+    interval_updated: '자동 인스턴스 생성 간격이 변경되었습니다.'
+  },
+  en: {
+    // Discord Bot command descriptions
+    status_desc: '📊 Check bot status and instance overview',
+    launch_desc: '🚀 Instantly create Always Free instance',
+    log_desc: '📋 View recent execution logs',
+    log_count_desc: 'Number of logs to retrieve',
+    stop_desc: '⏹️ Stop automatic instance creation',
+    start_desc: '▶️ Start automatic instance creation',
+    config_desc: '⚙️ Check current OCI configuration',
+    stats_desc: '📊 Detailed statistics and success rate analysis',
+    instances_desc: '🖥️ List currently running instances',
+    resources_desc: '💰 Always Free resource usage',
+    schedule_desc: '⏰ Set automatic creation schedule',
+    alert_desc: '🔔 Manage notification settings',
+    help_desc: '❓ Available command guide',
+    
+    // Messages
+    bot_status: '🤖 OCI Automation Bot Status',
+    uptime: '⌛ Uptime',
+    total_attempts: '🔢 Total Attempts',
+    auto_creation: '🔄 Auto Creation',
+    enabled: '🟢 Enabled',
+    disabled: '🔴 Disabled',
+    recent_result: '📊 Recent Result',
+    success: '✅ Success',
+    failed: '❌ Failed',
+    stopped: '⏹️ Automatic instance creation has been stopped.',
+    started: '▶️ Automatic instance creation has been started.',
+    already_active: '🔄 Auto creation is already active.',
+    no_logs: '📜 No attempt logs available yet.',
+    command_error: '❌ An error occurred while executing the command.',
+    schedule_changed: '⏰ Schedule Settings Changed',
+    interval_updated: 'Automatic instance creation interval has been updated.'
+  }
+};
+
+// 번역 함수
+function t(key) {
+  return translations[LANG][key] || translations['ko'][key] || key;
+}
+
 // 🆕 새로운 기능을 위한 변수들
-let scheduleInterval = 60; // 기본 1시간 간격 (분)
+let scheduleInterval = 5; // 기본 5분 간격 (분)
 let alertSettings = {
   success: true,
   failure: false,
@@ -412,8 +491,18 @@ function sendEmbed(interaction, status, errorMsg = null, manual = false) {
     embed.addFields({ name: '❗ 오류 상세', value: errorMsg.substring(0, 1000), inline: false });
   }
 
+  // 🔧 FIX: 비동기 처리 개선 - interaction이 이미 deferred 상태일 수 있음 
   if (interaction) {
-    interaction.reply({ embeds: [embed] });
+    // deferred reply인지 확인하고 적절한 메서드 사용
+    if (interaction.deferred) {
+      interaction.editReply({ embeds: [embed] }).catch(err => 
+        writeLog('Failed to edit reply: ' + err)
+      );
+    } else {
+      interaction.reply({ embeds: [embed] }).catch(err => 
+        writeLog('Failed to reply: ' + err)
+      );
+    }
   } else {
     const channel = client.channels.cache.get(CHANNEL_ID);
     if (channel) channel.send({ embeds: [embed] });
@@ -687,9 +776,9 @@ const commands = [
     .setDescription('⏰ 자동 생성 스케줄 설정')
     .addIntegerOption(option =>
       option.setName('interval')
-        .setDescription('시도 간격 (분)')
-        .setMinValue(10)
-        .setMaxValue(1440)
+        .setDescription('시도 간격 (3-60분)')
+        .setMinValue(3)
+        .setMaxValue(60)
         .setRequired(true)
     ),
     
@@ -867,7 +956,16 @@ client.on('interactionCreate', async interaction => {
     }
   } catch (error) {
     writeLog('Command execution error: ' + error);
-    await interaction.reply('❌ 명령어 실행 중 오류가 발생했습니다.');
+    // 🔧 FIX: interaction이 이미 replied 되었을 수 있으므로 안전하게 처리
+    try {
+      if (interaction.deferred) {
+        await interaction.editReply('❌ 명령어 실행 중 오류가 발생했습니다.');
+      } else if (!interaction.replied) {
+        await interaction.reply('❌ 명령어 실행 중 오류가 발생했습니다.');
+      }
+    } catch (replyError) {
+      writeLog('Failed to send error message: ' + replyError);
+    }
   }
 });
 
@@ -889,17 +987,17 @@ async function handleStatsCommand(interaction) {
   switch (period) {
     case 'today':
       const today = now.toDateString();
-      filteredResults = lastResults.filter(r => new Date(r.timestamp).toDateString() === today);
+      filteredResults = lastResults.filter(r => new Date(r.time).toDateString() === today);
       periodName = '오늘';
       break;
     case 'week':
       const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
-      filteredResults = lastResults.filter(r => new Date(r.timestamp) >= weekAgo);
+      filteredResults = lastResults.filter(r => new Date(r.time) >= weekAgo);
       periodName = '이번 주';
       break;
     case 'month':
       const monthAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
-      filteredResults = lastResults.filter(r => new Date(r.timestamp) >= monthAgo);
+      filteredResults = lastResults.filter(r => new Date(r.time) >= monthAgo);
       periodName = '이번 달';
       break;
   }
@@ -1045,6 +1143,11 @@ async function handleScheduleCommand(interaction) {
   
   scheduleInterval = newInterval;
   
+  // 🔧 FIX: 스케줄 타이머 재시작 - 이 부분이 빠져있어서 간격 변경이 적용되지 않았음
+  if (global.updateSchedule) {
+    global.updateSchedule();
+  }
+  
   const scheduleEmbed = new EmbedBuilder()
     .setTitle('⏰ 스케줄 설정 변경')
     .addFields(
@@ -1160,7 +1263,7 @@ client.once('ready', () => {
 async function sendDailySummary() {
   try {
     const today = new Date().toDateString();
-    const todayResults = lastResults.filter(r => new Date(r.timestamp).toDateString() === today);
+    const todayResults = lastResults.filter(r => new Date(r.time).toDateString() === today);
     
     const totalAttempts = todayResults.length;
     const successes = todayResults.filter(r => r.status).length;
