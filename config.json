@@ -22,7 +22,10 @@
     "areLegacyImdsEndpointsDisabled": false
   },
   "shapeConfig": {
-    "ocpus": 1,
-    "memoryInGBs": 6
+    "ocpus": 4,
+    "memoryInGBs": 24
+  },
+  "bootVolumeConfig": {
+    "sizeInGBs": 100
   }
 }

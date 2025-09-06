@@ -30,6 +30,33 @@
 
 set -euo pipefail
 
+# =============================
+# 🌐 Language selection (EN default)
+# =============================
+LANG_CHOICE="en"
+CONFIG_FILE="config.json"
+
+# If config.json has LANGUAGE, honor it
+if [ -f "$CONFIG_FILE" ]; then
+  PRESET_LANG=$(grep -o '"LANGUAGE"[[:space:]]*:[[:space:]]*"[a-z]*"' "$CONFIG_FILE" 2>/dev/null | sed -E 's/.*:"([a-z]+)"/\1/')
+  case "$PRESET_LANG" in
+    ko|en) LANG_CHOICE="$PRESET_LANG" ;;
+  esac
+fi
+
+if [ -z "${PRESET_LANG:-}" ]; then
+  echo "=============================================="
+  echo " Select language / 언어 선택"
+  echo "  [1] English (default)"
+  echo "  [2] 한국어"
+  echo "=============================================="
+  read -r -p "> Choice (1-2) [1]: " _sel
+  case "${_sel:-1}" in
+    2|ko|KO|Ko) LANG_CHOICE="ko" ;;
+    *) LANG_CHOICE="en" ;;
+  esac
+fi
+
 # 🔒 Root/Sudo 실행 방지
 if [[ $EUID -eq 0 ]]; then
   echo -e "\033[1;31m❌ 오류: 이 스크립트는 root 또는 sudo로 실행할 수 없습니다.\033[0m"
@@ -79,17 +106,32 @@ print_header() {
   echo -e "${CYAN}${BOLD}"
   echo "╔══════════════════════════════════════════════════════════════════════════════╗"
   echo "║                                                                              ║"
-  echo "║                    🧙‍♂️ OCI Always Free Discord Bot                           ║"
-  echo "║                              설정 마법사                                     ║"
+  if [ "$LANG_CHOICE" = "ko" ]; then
+    echo "║                    🧙‍♂️ OCI Always Free Discord Bot                           ║"
+    echo "║                              설정 마법사                                     ║"
+  else
+    echo "║                    🧙‍♂️ OCI Always Free Discord Bot                           ║"
+    echo "║                              Setup Wizard                                    ║"
+  fi
   echo "║                                                                              ║"
-  echo "║         Oracle Cloud Infrastructure Always Free 인스턴스 자동 생성            ║"
+  if [ "$LANG_CHOICE" = "ko" ]; then
+    echo "║         Oracle Cloud Infrastructure Always Free 인스턴스 자동 생성            ║"
+  else
+    echo "║     Oracle Cloud Infrastructure Always Free instance auto provisioning        ║"
+  fi
   echo "║                                                                              ║"
   echo "╚══════════════════════════════════════════════════════════════════════════════╝"
   echo -e "${RESET}"
   echo ""
-  log info "🎯 Always Free 특화: E2.1.Micro (2개), A1.Flex (4 OCPU, 24GB)"
-  log info "🤖 Discord 통합: 슬래시 명령어, 실시간 모니터링"
-  log info "🔧 완전 자동화: 기존 설정 인식, 실시간 검증"
+  if [ "$LANG_CHOICE" = "ko" ]; then
+    log info "🎯 Always Free 특화: E2.1.Micro (2개), A1.Flex (4 OCPU, 24GB)"
+    log info "🤖 Discord 통합: 슬래시 명령어, 실시간 모니터링"
+    log info "🔧 완전 자동화: 기존 설정 인식, 실시간 검증"
+  else
+    log info "🎯 Always Free targets: E2.1.Micro (x2), A1.Flex (4 OCPU, 24GB)"
+    log info "🤖 Discord integration: slash commands, live monitoring"
+    log info "🔧 Fully automated: detects existing config, real-time validation"
+  fi
   echo ""
 }
 
@@ -99,31 +141,56 @@ OCI_CONFIG_FILE="$HOME/.oci/config"
 # 메인 시작
 print_header
 
-log wizard "OCI/Discord Bot 완전 자동화 설정 마법사를 시작합니다!"
+if [ "$LANG_CHOICE" = "ko" ]; then
+  log wizard "OCI/Discord Bot 완전 자동화 설정 마법사를 시작합니다!"
+else
+  log wizard "Starting the fully automated OCI/Discord Bot setup wizard!"
+fi
 echo ""
-log info "💡 문제가 발생하면 다음과 같이 실행하세요:"
-echo -e "   ${CYAN}DEBUG=1 bash oci-config-wizard.sh${RESET}        # 디버깅 모드"
-echo -e "   ${CYAN}SHOW_HELP=1 bash oci-config-wizard.sh${RESET}    # OCI 설치 도움말"
+if [ "$LANG_CHOICE" = "ko" ]; then
+  log info "💡 문제가 발생하면 다음과 같이 실행하세요:"
+  echo -e "   ${CYAN}DEBUG=1 bash oci-config-wizard.sh${RESET}        # 디버깅 모드"
+  echo -e "   ${CYAN}SHOW_HELP=1 bash oci-config-wizard.sh${RESET}    # OCI 설치 도움말"
+else
+  log info "💡 If issues occur, try:"
+  echo -e "   ${CYAN}DEBUG=1 bash oci-config-wizard.sh${RESET}        # Debug mode"
+  echo -e "   ${CYAN}SHOW_HELP=1 bash oci-config-wizard.sh${RESET}    # OCI install help"
+fi
 echo ""
 
 print_requirements() {
   echo -e "${YELLOW}${BOLD}📋 사전 요구사항 체크리스트${RESET}"
   echo -e "${CYAN}┌────────────────────────────────────────────────────────────────┐${RESET}"
-  echo -e "${CYAN}│${RESET} ☐ OCI CLI 설치 완료                                        ${CYAN}│${RESET}"
-  echo -e "${CYAN}│${RESET} ☐ OCI config 파일 설정 (~/.oci/config)                    ${CYAN}│${RESET}"
-  echo -e "${CYAN}│${RESET} ☐ Discord Bot 생성 및 토큰 보유                            ${CYAN}│${RESET}"
-  echo -e "${CYAN}│${RESET} ☐ 서버에 봇 초대 및 권한 설정                              ${CYAN}│${RESET}"
+  if [ "$LANG_CHOICE" = "ko" ]; then
+    echo -e "${CYAN}│${RESET} ☐ OCI CLI 설치 완료                                        ${CYAN}│${RESET}"
+    echo -e "${CYAN}│${RESET} ☐ OCI config 파일 설정 (~/.oci/config)                    ${CYAN}│${RESET}"
+    echo -e "${CYAN}│${RESET} ☐ Discord Bot 생성 및 토큰 보유                            ${CYAN}│${RESET}"
+    echo -e "${CYAN}│${RESET} ☐ 서버에 봇 초대 및 권한 설정                              ${CYAN}│${RESET}"
+  else
+    echo -e "${CYAN}│${RESET} ☐ OCI CLI installed                                        ${CYAN}│${RESET}"
+    echo -e "${CYAN}│${RESET} ☐ OCI config present (~/.oci/config)                       ${CYAN}│${RESET}"
+    echo -e "${CYAN}│${RESET} ☐ Discord Bot created and token available                  ${CYAN}│${RESET}"
+    echo -e "${CYAN}│${RESET} ☐ Bot invited to server with appropriate permissions       ${CYAN}│${RESET}"
+  fi
   echo -e "${CYAN}└────────────────────────────────────────────────────────────────┘${RESET}"
   echo ""
-  
-  log info "� OCI CLI 미설정 시:"
-  echo "   ${CYAN}oci setup config${RESET}"
-  echo ""
-  log info "💡 Discord Bot 생성:"
-  echo "   ${CYAN}https://discord.com/developers/applications${RESET}"
-  echo ""
-  
-  read -p "모든 요구사항이 준비되었으면 Enter를 눌러 계속하세요..." -n 1
+  if [ "$LANG_CHOICE" = "ko" ]; then
+    log info "💡 OCI CLI 미설정 시:"
+    echo "   ${CYAN}oci setup config${RESET}"
+    echo ""
+    log info "💡 Discord Bot 생성:"
+    echo "   ${CYAN}https://discord.com/developers/applications${RESET}"
+    echo ""
+    read -p "모든 요구사항이 준비되었으면 Enter를 눌러 계속하세요..." -n 1
+  else
+    log info "💡 If OCI CLI is not configured:"
+    echo "   ${CYAN}oci setup config${RESET}"
+    echo ""
+    log info "💡 Create a Discord Bot:" 
+    echo "   ${CYAN}https://discord.com/developers/applications${RESET}"
+    echo ""
+    read -p "Press Enter to continue when ready..." -n 1
+  fi
   echo ""
 }
 
@@ -292,6 +359,14 @@ if [ -f "$CONFIG_FILE" ]; then
 else
   EXISTING="{}"
   log info "새로운 config.json 파일을 생성합니다."
+fi
+
+# Persist chosen language into config.json
+if command -v jq >/dev/null 2>&1; then
+  tmp=$(mktemp)
+  echo "$EXISTING" | jq --arg lang "$LANG_CHOICE" '.LANGUAGE = $lang' > "$tmp"
+  mv "$tmp" "$CONFIG_FILE"
+  EXISTING=$(cat "$CONFIG_FILE")
 fi
 
 # jq helper: 기존 값 있으면 그 값 반환

@@ -15,6 +15,50 @@
 
 set -euo pipefail
 
+# =============================
+# 🌐 Language selection (EN default)
+# =============================
+LANG_CHOICE="en"
+EARLY_CONFIG_FILE="config.json"
+
+# Offer language choice only if not preset via config
+if [ -f "$EARLY_CONFIG_FILE" ]; then
+  PRESET_LANG=$(grep -o '"LANGUAGE"[[:space:]]*:[[:space:]]*"[a-z]*"' "$EARLY_CONFIG_FILE" 2>/dev/null | sed -E 's/.*:"([a-z]+)"/\1/')
+  case "$PRESET_LANG" in
+    ko|en) LANG_CHOICE="$PRESET_LANG" ;;
+  esac
+fi
+
+if [ -z "${PRESET_LANG:-}" ]; then
+  echo "=============================================="
+  echo " Select language / 언어 선택"
+  echo "  [1] English (default)"
+  echo "  [2] 한국어"
+  echo "=============================================="
+  read -r -p "> Choice (1-2) [1]: " _sel
+  case "${_sel:-1}" in
+    2|ko|KO|Ko) LANG_CHOICE="ko" ;;
+    *) LANG_CHOICE="en" ;;
+  esac
+fi
+
+# Localized strings (header and a few key lines)
+if [ "$LANG_CHOICE" = "ko" ]; then
+  HDR_TITLE_LEFT="🤖 OCI Always Free Discord Bot"
+  HDR_TITLE_RIGHT="실행기"
+  HDR_SUB1="Oracle Cloud Infrastructure 인스턴스 자동 생성"
+  HDR_INFO1="🎯 Always Free 특화: E2.1.Micro, A1.Flex 자동 생성"
+  HDR_INFO2="🤖 Discord 통합: /status, /launch, /log 명령어"
+  HDR_INFO3="🔧 PM2 관리: 백그라운드 서비스로 실행"
+else
+  HDR_TITLE_LEFT="🤖 OCI Always Free Discord Bot"
+  HDR_TITLE_RIGHT="Launcher"
+  HDR_SUB1="Oracle Cloud Infrastructure instance auto-creation"
+  HDR_INFO1="🎯 Always Free focused: E2.1.Micro, A1.Flex"
+  HDR_INFO2="🤖 Discord integration: /status, /launch, /log"
+  HDR_INFO3="🔧 PM2 managed: runs as a background service"
+fi
+
 # 🔧 sudo 실행 및 OCI CLI PATH 설정
 setup_sudo_environment() {
   # sudo 실행 확인 및 안내
@@ -104,17 +148,16 @@ print_header() {
   echo -e "${MAGENTA}${BOLD}"
   echo "╔══════════════════════════════════════════════════════════════════════════════╗"
   echo "║                                                                              ║"
-  echo "║                    🤖 OCI Always Free Discord Bot                            ║"
-  echo "║                              실행기                                           ║"
+  printf "║ %60s %21s║\n" "${HDR_TITLE_LEFT}" "${HDR_TITLE_RIGHT}"
   echo "║                                                                              ║"
-  echo "║              Oracle Cloud Infrastructure 인스턴스 자동 생성                   ║"
+  printf "║ %74s ║\n" "${HDR_SUB1}"
   echo "║                                                                              ║"
   echo "╚══════════════════════════════════════════════════════════════════════════════╝"
   echo -e "${RESET}"
   echo ""
-  log info "🎯 Always Free 특화: E2.1.Micro, A1.Flex 자동 생성"
-  log info "🤖 Discord 통합: /status, /launch, /log 명령어"
-  log info "🔧 PM2 관리: 백그라운드 서비스로 실행"
+  log info "${HDR_INFO1}"
+  log info "${HDR_INFO2}"
+  log info "${HDR_INFO3}"
   echo ""
 }
 
@@ -131,7 +174,11 @@ else
 fi
 
 print_header
-log bot "OCI Discord Bot 자동화 스크립트를 시작합니다!"
+if [ "$LANG_CHOICE" = "ko" ]; then
+  log bot "OCI Discord Bot 자동화 스크립트를 시작합니다!"
+else
+  log bot "Starting OCI Discord Bot automation script!"
+fi
 
 # sudo 환경에서 실행 중인지 확인 및 설정
 if [[ $EUID -eq 0 ]]; then
@@ -142,22 +189,35 @@ echo ""
 
 # 1. config.json 파일 존재 및 유효성 검증
 if [ ! -f "$CONFIG_FILE" ]; then
-  log fail "$CONFIG_FILE 파일이 없습니다."
-  log info "먼저 다음 명령어를 실행하세요: bash oci-config-wizard.sh"
+  if [ "$LANG_CHOICE" = "ko" ]; then
+    log fail "$CONFIG_FILE 파일이 없습니다."
+    log info "먼저 다음 명령어를 실행하세요: bash oci-config-wizard.sh"
+  else
+    log fail "$CONFIG_FILE not found."
+    log info "Please run: bash oci-config-wizard.sh first"
+  fi
   exit 1
 fi
 
 if ! command -v jq >/dev/null 2>&1; then
-  log info "jq 설치 중..."
+  if [ "$LANG_CHOICE" = "ko" ]; then
+    log info "jq 설치 중..."
+  else
+    log info "Installing jq..."
+  fi
   if command -v apt-get >/dev/null 2>&1; then
     sudo apt-get update && sudo apt-get install -y jq
   elif command -v yum >/dev/null 2>&1; then
     sudo yum install -y jq
   else
-    log fail "jq를 수동으로 설치해주세요."
+    if [ "$LANG_CHOICE" = "ko" ]; then
+      log fail "jq를 수동으로 설치해주세요."
+    else
+      log fail "Please install jq manually."
+    fi
     exit 1
   fi
-  log success "jq 설치 완료"
+  [ "$LANG_CHOICE" = "ko" ] && log success "jq 설치 완료" || log success "jq installed"
 fi
 
 # config.json에서 값 추출 함수
@@ -196,6 +256,12 @@ OCPUS=$(jq -r '.shapeConfig.ocpus' "$CONFIG_FILE")
 MEMORY_IN_GBS=$(jq -r '.shapeConfig.memoryInGBs' "$CONFIG_FILE")
 
 log success "모든 설정값 로드 완료"
+
+# Persist LANGUAGE in config.json if missing
+if ! jq -er '.LANGUAGE' "$CONFIG_FILE" >/dev/null 2>&1; then
+  tmp=$(mktemp)
+  jq --arg lang "$LANG_CHOICE" '.LANGUAGE = $lang' "$CONFIG_FILE" > "$tmp" && mv "$tmp" "$CONFIG_FILE"
+fi
 
 # 2. OCI CLI 설치 확인
 echo ""
@@ -362,8 +428,8 @@ let autoLaunch = true;
 let lastResults = [];
 const LOG_FILE = './oci_bot.log';
 
-// 🌐 언어 지원 시스템
-const LANG = ociConfig.LANGUAGE || 'ko';
+// 🌐 언어 지원 시스템 (default to English)
+const LANG = ociConfig.LANGUAGE || 'en';
 
 const translations = {
   ko: {
@@ -591,6 +657,10 @@ function tryLaunchInstance(interaction = null, manual = false) {
   writeLog(`Starting attempt #${attemptCount} (${manual ? 'manual' : 'auto'})`);
   
   // config.json 기반 OCI 명령어 구성
+  const bootArg = (ociConfig.bootVolumeConfig && ociConfig.bootVolumeConfig.sizeInGBs)
+    ? ` --source-boot-volume-size-in-gbs ${ociConfig.bootVolumeConfig.sizeInGBs}`
+    : '';
+
   const ociCommand = [
     'oci compute instance launch',
     '--availability-domain', `${ociConfig.AVAILABILITY_DOMAIN}`,
@@ -604,7 +674,7 @@ function tryLaunchInstance(interaction = null, manual = false) {
     '--shape-config', `'{"ocpus":${ociConfig.shapeConfig.ocpus},"memoryInGBs":${ociConfig.shapeConfig.memoryInGBs}}'`,
     '--instance-options', `'{"areLegacyImdsEndpointsDisabled":"false"}'`,
     '--availability-config', `'{"isLiveMigrationPreferred":"true","recoveryAction":"RESTORE_INSTANCE"}'`
-  ].join(' ');
+  ].join(' ') + bootArg;
 
   writeLog(`Executing: ${ociCommand}`);
 
