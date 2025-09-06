@@ -12,6 +12,8 @@
   "SHAPE": "VM.Standard.A1.Flex",
   "SUBNET_ID": "ocid1.subnet.oc1..exampleuniqueID5678",
   "IMAGE_ID": "ocid1.image.oc1..exampleuniqueID9101",
+  "LANGUAGE": "ko",
+  "AVAILABILITY_DOMAIN": "your-availability-domain",
   "availabilityConfig": {
     "isLiveMigrationPreferred": true,
     "recoveryAction": "RESTORE_INSTANCE"

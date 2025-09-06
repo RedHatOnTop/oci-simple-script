@@ -362,8 +362,153 @@ let autoLaunch = true;
 let lastResults = [];
 const LOG_FILE = './oci_bot.log';
 
+// 🌐 언어 지원 시스템
+const LANG = ociConfig.LANGUAGE || 'ko';
+
+const translations = {
+  ko: {
+    // Discord Bot 명령어 설명
+    status_desc: '🤖 봇 상태 및 최근 결과 확인',
+    launch_desc: '🚀 OCI 인스턴스 즉시 생성 시도',
+    log_desc: '📜 최근 시도 로그 확인',
+    log_count_desc: '표시할 로그 개수 (1-50)',
+    stop_desc: '⏹️ 자동 인스턴스 생성 중지',
+    start_desc: '▶️ 자동 인스턴스 생성 시작',
+    config_desc: '⚙️ 현재 OCI 설정 확인',
+    stats_desc: '📊 상세 통계 및 성공률 분석',
+    stats_period_desc: '통계 기간',
+    instances_desc: '🖥️ 현재 실행 중인 인스턴스 목록 조회',
+    instances_filter_desc: '필터 옵션',
+    resources_desc: '💰 Always Free 자원 사용량 조회',
+    schedule_desc: '⏰ 자동 생성 스케줄 설정',
+    schedule_interval_desc: '시도 간격 (3-60분)',
+    alert_desc: '🔔 알림 설정 관리',
+    alert_type_desc: '알림 유형',
+    alert_enabled_desc: '알림 활성화/비활성화',
+    help_desc: '❓ 사용 가능한 명령어 안내',
+    
+    // 선택 옵션들
+    today: '📅 오늘',
+    week: '📆 이번 주',
+    month: '🗓️ 이번 달',
+    all: '📈 전체',
+    running: '🟢 실행 중',
+    stopped: '🔴 중지됨',
+    all_filter: '🟡 전체',
+    success_alert: '✅ 성공 알림',
+    failure_alert: '❌ 실패 알림',
+    daily_alert: '📊 일일 요약',
+    error_alert: '⚠️ 오류 알림',
+    
+    // 메시지
+    bot_status: '🤖 OCI 자동화 봇 상태',
+    uptime: '⌛ 업타임',
+    total_attempts: '🔢 총 시도 횟수',
+    auto_creation: '🔄 자동 생성',
+    enabled: '🟢 활성화',
+    disabled: '🔴 비활성화',
+    recent_result: '📊 최근 결과',
+    success: '✅ 성공',
+    failed: '❌ 실패',
+    stopped: '⏹️ 자동 인스턴스 생성이 중지되었습니다.',
+    started: '▶️ 자동 인스턴스 생성이 시작되었습니다.',
+    already_active: '🔄 이미 자동 생성이 활성화되어 있습니다.',
+    no_logs: '📜 아직 시도 로그가 없습니다.',
+    command_error: '❌ 명령어 실행 중 오류가 발생했습니다.',
+    schedule_changed: '⏰ 스케줄 설정 변경',
+    interval_updated: '자동 인스턴스 생성 간격이 변경되었습니다.',
+    help_title: '📖 OCI Discord Bot 명령어 가이드',
+    help_description: 'Oracle Cloud Infrastructure Always Free 인스턴스 자동 생성 봇',
+    help_basic: '🤖 기본 명령어',
+    help_control: '⚙️ 제어 명령어', 
+    help_analysis: '📊 분석 명령어',
+    help_notification: '🔔 알림 명령어',
+    help_current_status: '📈 현재 상태',
+    help_footer: 'Always Free 인스턴스 생성을 위한 Discord Bot',
+    auto_creation_status: '자동 생성',
+    attempt_interval: '시도 간격',
+    previous_interval: '🔄 이전 간격',
+    new_interval: '🆕 새로운 간격',
+    next_attempt: '📅 다음 시도',
+    schedule_updated_desc: '자동 인스턴스 생성 간격이 변경되었습니다.',
+    about_minutes: '약 분 후'
+  },
+  en: {
+    // Discord Bot command descriptions
+    status_desc: '🤖 Check bot status and recent results',
+    launch_desc: '🚀 Immediately attempt OCI instance creation',
+    log_desc: '📜 View recent attempt logs',
+    log_count_desc: 'Number of logs to display (1-50)',
+    stop_desc: '⏹️ Stop automatic instance creation',
+    start_desc: '▶️ Start automatic instance creation',
+    config_desc: '⚙️ Check current OCI configuration',
+    stats_desc: '📊 Detailed statistics and success rate analysis',
+    stats_period_desc: 'Statistics period',
+    instances_desc: '🖥️ List currently running instances',
+    instances_filter_desc: 'Filter options',
+    resources_desc: '💰 Always Free resource usage',
+    schedule_desc: '⏰ Set automatic creation schedule',
+    schedule_interval_desc: 'Attempt interval (3-60 minutes)',
+    alert_desc: '🔔 Manage notification settings',
+    alert_type_desc: 'Notification type',
+    alert_enabled_desc: 'Enable/disable notifications',
+    help_desc: '❓ Available command guide',
+    
+    // Choice options
+    today: '📅 Today',
+    week: '📆 This Week',
+    month: '🗓️ This Month',
+    all: '📈 All Time',
+    running: '🟢 Running',
+    stopped: '🔴 Stopped',
+    all_filter: '🟡 All',
+    success_alert: '✅ Success Alert',
+    failure_alert: '❌ Failure Alert',
+    daily_alert: '📊 Daily Summary',
+    error_alert: '⚠️ Error Alert',
+    
+    // Messages
+    bot_status: '🤖 OCI Automation Bot Status',
+    uptime: '⌛ Uptime',
+    total_attempts: '🔢 Total Attempts',
+    auto_creation: '🔄 Auto Creation',
+    enabled: '🟢 Enabled',
+    disabled: '🔴 Disabled',
+    recent_result: '📊 Recent Result',
+    success: '✅ Success',
+    failed: '❌ Failed',
+    stopped: '⏹️ Automatic instance creation has been stopped.',
+    started: '▶️ Automatic instance creation has been started.',
+    already_active: '🔄 Auto creation is already active.',
+    no_logs: '📜 No attempt logs available yet.',
+    command_error: '❌ An error occurred while executing the command.',
+    schedule_changed: '⏰ Schedule Settings Changed',
+    interval_updated: 'Automatic instance creation interval has been updated.',
+    help_title: '📖 OCI Discord Bot Command Guide',
+    help_description: 'Oracle Cloud Infrastructure Always Free instance auto-creation bot',
+    help_basic: '🤖 Basic Commands',
+    help_control: '⚙️ Control Commands',
+    help_analysis: '📊 Analysis Commands', 
+    help_notification: '🔔 Notification Commands',
+    help_current_status: '📈 Current Status',
+    help_footer: 'Discord Bot for Always Free instance creation',
+    auto_creation_status: 'Auto Creation',
+    attempt_interval: 'Attempt Interval',
+    previous_interval: '🔄 Previous Interval',
+    new_interval: '🆕 New Interval', 
+    next_attempt: '📅 Next Attempt',
+    schedule_updated_desc: 'Automatic instance creation interval has been updated.',
+    about_minutes: 'About minutes later'
+  }
+};
+
+// 번역 함수
+function t(key) {
+  return translations[LANG][key] || translations['ko'][key] || key;
+}
+
 // 🆕 새로운 기능을 위한 변수들
-let scheduleInterval = 60; // 기본 1시간 간격 (분)
+let scheduleInterval = 5; // 기본 5분 간격 (분)
 let alertSettings = {
   success: true,
   failure: false,
@@ -412,8 +557,18 @@ function sendEmbed(interaction, status, errorMsg = null, manual = false) {
     embed.addFields({ name: '❗ 오류 상세', value: errorMsg.substring(0, 1000), inline: false });
   }
 
+  // 🔧 FIX: 비동기 처리 개선 - interaction이 이미 deferred 상태일 수 있음 
   if (interaction) {
-    interaction.reply({ embeds: [embed] });
+    // deferred reply인지 확인하고 적절한 메서드 사용
+    if (interaction.deferred) {
+      interaction.editReply({ embeds: [embed] }).catch(err => 
+        writeLog('Failed to edit reply: ' + err)
+      );
+    } else {
+      interaction.reply({ embeds: [embed] }).catch(err => 
+        writeLog('Failed to reply: ' + err)
+      );
+    }
   } else {
     const channel = client.channels.cache.get(CHANNEL_ID);
     if (channel) channel.send({ embeds: [embed] });
@@ -632,88 +787,88 @@ function tryLaunchInstance(interaction = null, manual = false) {
 
 // 슬래시 명령어 정의
 const commands = [
-  new SlashCommandBuilder().setName('status').setDescription('🤖 봇 상태 및 최근 결과 확인'),
-  new SlashCommandBuilder().setName('launch').setDescription('🚀 OCI 인스턴스 즉시 생성 시도'),
+  new SlashCommandBuilder().setName('status').setDescription(t('status_desc')),
+  new SlashCommandBuilder().setName('launch').setDescription(t('launch_desc')),
   new SlashCommandBuilder()
     .setName('log')
-    .setDescription('📜 최근 시도 로그 확인')
+    .setDescription(t('log_desc'))
     .addIntegerOption(option => 
       option.setName('count')
-        .setDescription('표시할 로그 개수 (1-50)')
+        .setDescription(t('log_count_desc'))
         .setRequired(false)
         .setMinValue(1)
         .setMaxValue(50)
     ),
-  new SlashCommandBuilder().setName('stop').setDescription('⏹️ 자동 인스턴스 생성 중지'),
-  new SlashCommandBuilder().setName('start').setDescription('▶️ 자동 인스턴스 생성 시작'),
-  new SlashCommandBuilder().setName('config').setDescription('⚙️ 현재 OCI 설정 확인'),
+  new SlashCommandBuilder().setName('stop').setDescription(t('stop_desc')),
+  new SlashCommandBuilder().setName('start').setDescription(t('start_desc')),
+  new SlashCommandBuilder().setName('config').setDescription(t('config_desc')),
   
   // 🆕 새로운 고급 기능들
   new SlashCommandBuilder()
     .setName('stats')
-    .setDescription('📊 상세 통계 및 성공률 분석')
+    .setDescription(t('stats_desc'))
     .addStringOption(option =>
       option.setName('period')
-        .setDescription('통계 기간')
+        .setDescription(t('stats_period_desc'))
         .addChoices(
-          { name: '📅 오늘', value: 'today' },
-          { name: '📆 이번 주', value: 'week' },
-          { name: '🗓️ 이번 달', value: 'month' },
-          { name: '📈 전체', value: 'all' }
+          { name: t('today'), value: 'today' },
+          { name: t('week'), value: 'week' },
+          { name: t('month'), value: 'month' },
+          { name: t('all'), value: 'all' }
         )
         .setRequired(false)
     ),
     
   new SlashCommandBuilder()
     .setName('instances')
-    .setDescription('🖥️ 현재 실행 중인 인스턴스 목록 조회')
+    .setDescription(t('instances_desc'))
     .addStringOption(option =>
       option.setName('filter')
-        .setDescription('필터 옵션')
+        .setDescription(t('instances_filter_desc'))
         .addChoices(
-          { name: '🟢 실행 중', value: 'running' },
-          { name: '🔴 중지됨', value: 'stopped' },
-          { name: '🟡 전체', value: 'all' }
+          { name: t('running'), value: 'running' },
+          { name: t('stopped'), value: 'stopped' },
+          { name: t('all_filter'), value: 'all' }
         )
         .setRequired(false)
     ),
     
   new SlashCommandBuilder()
     .setName('resources')
-    .setDescription('💰 Always Free 자원 사용량 조회'),
+    .setDescription(t('resources_desc')),
     
   new SlashCommandBuilder()
     .setName('schedule')
-    .setDescription('⏰ 자동 생성 스케줄 설정')
+    .setDescription(t('schedule_desc'))
     .addIntegerOption(option =>
       option.setName('interval')
-        .setDescription('시도 간격 (분)')
-        .setMinValue(10)
-        .setMaxValue(1440)
+        .setDescription(t('schedule_interval_desc'))
+        .setMinValue(3)
+        .setMaxValue(60)
         .setRequired(true)
     ),
     
   new SlashCommandBuilder()
     .setName('alert')
-    .setDescription('🔔 알림 설정 관리')
+    .setDescription(t('alert_desc'))
     .addStringOption(option =>
       option.setName('type')
-        .setDescription('알림 유형')
+        .setDescription(t('alert_type_desc'))
         .addChoices(
-          { name: '✅ 성공 알림', value: 'success' },
-          { name: '❌ 실패 알림', value: 'failure' },
-          { name: '📊 일일 요약', value: 'daily' },
-          { name: '⚠️ 오류 알림', value: 'error' }
+          { name: t('success_alert'), value: 'success' },
+          { name: t('failure_alert'), value: 'failure' },
+          { name: t('daily_alert'), value: 'daily' },
+          { name: t('error_alert'), value: 'error' }
         )
         .setRequired(true)
     )
     .addBooleanOption(option =>
       option.setName('enabled')
-        .setDescription('알림 활성화/비활성화')
+        .setDescription(t('alert_enabled_desc'))
         .setRequired(true)
     ),
     
-  new SlashCommandBuilder().setName('help').setDescription('❓ 사용 가능한 명령어 안내')
+  new SlashCommandBuilder().setName('help').setDescription(t('help_desc'))
 ].map(cmd => cmd.toJSON());
 
 // Discord REST API로 슬래시 명령어 등록
@@ -744,11 +899,11 @@ client.on('interactionCreate', async interaction => {
       case 'status':
         const last = lastResults[0];
         const embed = new EmbedBuilder()
-          .setTitle('🤖 OCI 자동화 봇 상태')
+          .setTitle(t('bot_status'))
           .addFields(
-            { name: '⌛ 업타임', value: getUptime(), inline: true },
-            { name: '🔢 총 시도 횟수', value: attemptCount.toString(), inline: true },
-            { name: '🔄 자동 생성', value: autoLaunch ? '🟢 활성화' : '🔴 비활성화', inline: true },
+            { name: t('uptime'), value: getUptime(), inline: true },
+            { name: t('total_attempts'), value: attemptCount.toString(), inline: true },
+            { name: t('auto_creation'), value: autoLaunch ? t('enabled') : t('disabled'), inline: true },
             { name: '🖥️ Shape', value: ociConfig.SHAPE || 'Unknown', inline: true },
             { name: '🌏 Region', value: ociConfig.REGION || 'Unknown', inline: true },
             { name: '💾 사양', value: `${ociConfig.shapeConfig?.ocpus || '?'} OCPU, ${ociConfig.shapeConfig?.memoryInGBs || '?'}GB`, inline: true }
@@ -758,8 +913,8 @@ client.on('interactionCreate', async interaction => {
           
         if (last) {
           embed.addFields({
-            name: '📊 최근 결과',
-            value: `${last.status ? '✅ 성공' : '❌ 실패'} (${last.time})`,
+            name: t('recent_result'),
+            value: `${last.status ? t('success') : t('failed')} (${last.time})`,
             inline: false
           });
         }
@@ -777,7 +932,7 @@ client.on('interactionCreate', async interaction => {
         count = Math.min(Math.max(count, 1), lastResults.length);
         
         if (lastResults.length === 0) {
-          await interaction.reply('📜 아직 시도 로그가 없습니다.');
+          await interaction.reply(t('no_logs'));
           break;
         }
         
@@ -797,16 +952,16 @@ client.on('interactionCreate', async interaction => {
       case 'stop':
         autoLaunch = false;
         writeLog('Auto launch stopped by user command');
-        await interaction.reply('⏹️ 자동 인스턴스 생성이 중지되었습니다.');
+        await interaction.reply(t('stopped'));
         break;
 
       case 'start':
         if (!autoLaunch) {
           autoLaunch = true;
           writeLog('Auto launch started by user command');
-          await interaction.reply('▶️ 자동 인스턴스 생성이 시작되었습니다.');
+          await interaction.reply(t('started'));
         } else {
-          await interaction.reply('🔄 이미 자동 생성이 활성화되어 있습니다.');
+          await interaction.reply(t('already_active'));
         }
         break;
 
@@ -828,18 +983,18 @@ client.on('interactionCreate', async interaction => {
 
       case 'help':
         const helpEmbed = new EmbedBuilder()
-          .setTitle('📖 OCI Discord Bot 명령어 가이드')
-          .setDescription('Oracle Cloud Infrastructure Always Free 인스턴스 자동 생성 봇')
+          .setTitle(t('help_title'))
+          .setDescription(t('help_description'))
           .addFields(
-            { name: '🤖 기본 명령어', value: '`/status` - 봇 상태 확인\n`/launch` - 즉시 인스턴스 생성\n`/log [count]` - 시도 로그 확인', inline: true },
-            { name: '⚙️ 제어 명령어', value: '`/start` - 자동 생성 시작\n`/stop` - 자동 생성 중지\n`/schedule [분]` - 간격 설정', inline: true },
-            { name: '📊 분석 명령어', value: '`/stats [period]` - 상세 통계\n`/instances [filter]` - 인스턴스 목록\n`/resources` - 자원 사용량', inline: true },
-            { name: '🔔 알림 명령어', value: '`/alert [type] [on/off]` - 알림 설정\n`/config` - 현재 설정 확인\n`/help` - 이 도움말', inline: true },
-            { name: '📈 현재 상태', value: `자동 생성: ${autoLaunch ? '🟢 활성화' : '🔴 비활성화'}\n업타임: ${getUptime()}\n시도 간격: ${scheduleInterval}분`, inline: false }
+            { name: t('help_basic'), value: '`/status` - ' + (LANG === 'ko' ? '봇 상태 확인' : 'Check bot status') + '\n`/launch` - ' + (LANG === 'ko' ? '즉시 인스턴스 생성' : 'Create instance immediately') + '\n`/log [count]` - ' + (LANG === 'ko' ? '시도 로그 확인' : 'Check attempt logs'), inline: true },
+            { name: t('help_control'), value: '`/start` - ' + (LANG === 'ko' ? '자동 생성 시작' : 'Start auto creation') + '\n`/stop` - ' + (LANG === 'ko' ? '자동 생성 중지' : 'Stop auto creation') + '\n`/schedule [min]` - ' + (LANG === 'ko' ? '간격 설정' : 'Set interval'), inline: true },
+            { name: t('help_analysis'), value: '`/stats [period]` - ' + (LANG === 'ko' ? '상세 통계' : 'Detailed stats') + '\n`/instances [filter]` - ' + (LANG === 'ko' ? '인스턴스 목록' : 'Instance list') + '\n`/resources` - ' + (LANG === 'ko' ? '자원 사용량' : 'Resource usage'), inline: true },
+            { name: t('help_notification'), value: '`/alert [type] [on/off]` - ' + (LANG === 'ko' ? '알림 설정' : 'Alert settings') + '\n`/config` - ' + (LANG === 'ko' ? '현재 설정 확인' : 'Check config') + '\n`/help` - ' + (LANG === 'ko' ? '이 도움말' : 'This help'), inline: true },
+            { name: t('help_current_status'), value: `${t('auto_creation_status')}: ${autoLaunch ? t('enabled') : t('disabled')}\n${t('uptime')}: ${getUptime()}\n${t('attempt_interval')}: ${scheduleInterval}${LANG === 'ko' ? '분' : ' min'}`, inline: false }
           )
           .setColor(0x0099ff)
           .setTimestamp()
-          .setFooter({ text: 'Always Free 인스턴스 생성을 위한 Discord Bot' });
+          .setFooter({ text: t('help_footer') });
           
         await interaction.reply({ embeds: [helpEmbed] });
         break;
@@ -867,7 +1022,16 @@ client.on('interactionCreate', async interaction => {
     }
   } catch (error) {
     writeLog('Command execution error: ' + error);
-    await interaction.reply('❌ 명령어 실행 중 오류가 발생했습니다.');
+    // 🔧 FIX: interaction이 이미 replied 되었을 수 있으므로 안전하게 처리
+    try {
+      if (interaction.deferred) {
+        await interaction.editReply(t('command_error'));
+      } else if (!interaction.replied) {
+        await interaction.reply(t('command_error'));
+      }
+    } catch (replyError) {
+      writeLog('Failed to send error message: ' + replyError);
+    }
   }
 });
 
@@ -889,17 +1053,17 @@ async function handleStatsCommand(interaction) {
   switch (period) {
     case 'today':
       const today = now.toDateString();
-      filteredResults = lastResults.filter(r => new Date(r.timestamp).toDateString() === today);
+      filteredResults = lastResults.filter(r => new Date(r.time).toDateString() === today);
       periodName = '오늘';
       break;
     case 'week':
       const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
-      filteredResults = lastResults.filter(r => new Date(r.timestamp) >= weekAgo);
+      filteredResults = lastResults.filter(r => new Date(r.time) >= weekAgo);
       periodName = '이번 주';
       break;
     case 'month':
       const monthAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
-      filteredResults = lastResults.filter(r => new Date(r.timestamp) >= monthAgo);
+      filteredResults = lastResults.filter(r => new Date(r.time) >= monthAgo);
       periodName = '이번 달';
       break;
   }
@@ -1045,14 +1209,21 @@ async function handleScheduleCommand(interaction) {
   
   scheduleInterval = newInterval;
   
+  // 🔧 FIX: 스케줄 타이머 재시작 - 이 부분이 빠져있어서 간격 변경이 적용되지 않았음
+  if (global.updateSchedule) {
+    global.updateSchedule();
+  }
+  
   const scheduleEmbed = new EmbedBuilder()
-    .setTitle('⏰ 스케줄 설정 변경')
+    .setTitle(t('schedule_changed'))
     .addFields(
-      { name: '🔄 이전 간격', value: `${oldInterval}분`, inline: true },
-      { name: '🆕 새로운 간격', value: `${newInterval}분`, inline: true },
-      { name: '📅 다음 시도', value: `약 ${newInterval}분 후`, inline: true }
+      { name: t('previous_interval'), value: `${oldInterval}${LANG === 'ko' ? '분' : ' min'}`, inline: true },
+      { name: t('new_interval'), value: `${newInterval}${LANG === 'ko' ? '분' : ' min'}`, inline: true },
+      { name: t('next_attempt'), value: LANG === 'ko' ? `약 ${newInterval}분 후` : `About ${newInterval} min later`, inline: true }
     )
-    .setDescription(`자동 인스턴스 생성 간격이 **${newInterval}분**으로 설정되었습니다.`)
+    .setDescription(LANG === 'ko' ? 
+      `자동 인스턴스 생성 간격이 **${newInterval}분**으로 설정되었습니다.` : 
+      `Automatic instance creation interval has been set to **${newInterval} minutes**.`)
     .setColor(0x00ff00)
     .setTimestamp();
   
@@ -1160,7 +1331,7 @@ client.once('ready', () => {
 async function sendDailySummary() {
   try {
     const today = new Date().toDateString();
-    const todayResults = lastResults.filter(r => new Date(r.timestamp).toDateString() === today);
+    const todayResults = lastResults.filter(r => new Date(r.time).toDateString() === today);
     
     const totalAttempts = todayResults.length;
     const successes = todayResults.filter(r => r.status).length;
