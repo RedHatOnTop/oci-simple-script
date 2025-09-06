@@ -211,7 +211,7 @@ oci iam region list --output table
 
 ```bash
 # 📥 Download scripts
-git clone https://github.com/RedHatOnTop/oci-simple-script.git
+git clone https://github.com/CorelLinux/oci-simple-script.git
 cd oci-simple-script
 
 # 🧙‍♂️ Run setup wizard
@@ -503,7 +503,7 @@ tail -f oci_bot.log
 **🐛 Bug Reports**  
 Let us know about issues you find
 
-[Create Issue](https://github.com/RedHatOnTop/oci-simple-script/issues)
+[Create Issue](https://github.com/CorelLinux/oci-simple-script/issues)
 
 </td>
 <td width="33%" align="center">
@@ -511,7 +511,7 @@ Let us know about issues you find
 **💡 Feature Requests**  
 Share your new ideas
 
-[Feature Request](https://github.com/RedHatOnTop/oci-simple-script/issues)
+[Feature Request](https://github.com/CorelLinux/oci-simple-script/issues)
 
 </td>
 <td width="33%" align="center">
@@ -519,7 +519,7 @@ Share your new ideas
 **🔧 Code Contributions**  
 Write improvements yourself
 
-[Pull Request](https://github.com/RedHatOnTop/oci-simple-script/pulls)
+[Pull Request](https://github.com/CorelLinux/oci-simple-script/pulls)
 
 </td>
 </tr>

@@ -218,7 +218,7 @@ oci iam region list --output table
 
 ```bash
 # 📥 스크립트 다운로드
-git clone https://github.com/RedHatOnTop/oci-simple-script.git
+git clone https://github.com/CorelLinux/oci-simple-script.git
 cd oci-simple-script
 
 # 🧙‍♂️ 설정 마법사 실행
@@ -513,7 +513,7 @@ tail -f oci_bot.log
 **🐛 버그 리포트**  
 발견한 문제를 알려주세요
 
-[Issue 생성](https://github.com/RedHatOnTop/oci-simple-script/issues)
+[Issue 생성](https://github.com/CorelLinux/oci-simple-script/issues)
 
 </td>
 <td width="33%" align="center">
@@ -521,7 +521,7 @@ tail -f oci_bot.log
 **💡 기능 제안**  
 새로운 아이디어를 공유하세요
 
-[Feature Request](https://github.com/RedHatOnTop/oci-simple-script/issues)
+[Feature Request](https://github.com/CorelLinux/oci-simple-script/issues)
 
 </td>
 <td width="33%" align="center">
@@ -529,7 +529,7 @@ tail -f oci_bot.log
 **🔧 코드 기여**  
 직접 개선사항을 작성하세요
 
-[Pull Request](https://github.com/RedHatOnTop/oci-simple-script/pulls)
+[Pull Request](https://github.com/CorelLinux/oci-simple-script/pulls)
 
 </td>
 </tr>
