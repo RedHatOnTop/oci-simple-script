@@ -605,6 +605,20 @@ function writeLog(msg) {
 }
 
 function sendEmbed(interaction, status, errorMsg = null, manual = false) {
+  // Helper to safely render a short code block within Discord field limits
+  const makeShortCodeBlock = (text) => {
+    const MAX = 1010; // Discord field value limit is ~1024
+    const wrapStart = '```bash\n';
+    const wrapEnd = '\n```';
+    const budget = MAX - (wrapStart.length + wrapEnd.length);
+    let content = text || '';
+    if (content.length > budget) {
+      const half = Math.floor((budget - 5) / 2);
+      content = content.slice(0, half) + '\n...\n' + content.slice(-half);
+    }
+    return wrapStart + content + wrapEnd;
+  };
+
   const embed = new EmbedBuilder()
     .setTitle(manual ? '🚀 OCI 인스턴스 수동 생성 시도' : '⚡ OCI 인스턴스 자동 생성 시도')
     .addFields(
@@ -621,6 +635,16 @@ function sendEmbed(interaction, status, errorMsg = null, manual = false) {
     
   if (errorMsg) {
     embed.addFields({ name: '❗ 오류 상세', value: errorMsg.substring(0, 1000), inline: false });
+    // Append attempted command if we have the last executed command in log (pull from recent writeLog line)
+    try {
+      const logTail = fs.readFileSync(LOG_FILE, 'utf8').toString().split('\n').reverse().slice(0, 50);
+      const execLine = logTail.find(l => l.includes('Executing: oci compute instance launch')) || '';
+      const attempted = execLine.replace(/^.*Executing: /, '');
+      if (attempted) {
+        const cmdTitle = (LANG === 'ko') ? '🧪 시도한 명령' : '🧪 Attempted Command';
+        embed.addFields({ name: cmdTitle, value: makeShortCodeBlock(attempted), inline: false });
+      }
+    } catch (_) { /* ignore */ }
   }
 
   // 🔧 FIX: 비동기 처리 개선 - interaction이 이미 deferred 상태일 수 있음 
@@ -776,8 +800,7 @@ function tryLaunchInstance(interaction = null, manual = false) {
         }
       }
       
-      // Add attempted command to error message
-      errorMsg += `\n\n**Attempted Command:**\n\`\`\`bash\n${ociCommand}\n\`\`\``;
+  // Keep attempted command separate; we'll add it as a dedicated embed field later
       
     } else if (combined.includes('"id"') && combined.includes('ocid1.instance')) {
       status = true;

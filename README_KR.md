@@ -10,6 +10,8 @@
 
 **Oracle Cloud Infrastructure의 Always Free 인스턴스를 Discord에서 간편하게 생성하세요!**
 
+> 시작 시 언어 선택 프롬프트가 제공됩니다. 기본은 영어이며 한국어도 지원합니다. 선택한 언어는 `config.json`의 `LANGUAGE`에 저장되어 다음 실행부터 자동 적용됩니다.
+
 [🚀 빠른 시작](#🛠️-빠른-시작) • [📖 사용법](#🎮-사용법) • [🔧 고급 설정](#🎨-고급-설정) • [🤝 기여하기](#🤝-기여하기)
 
 [English](README.md) | **한국어**
@@ -70,7 +72,7 @@
 ### 🎯 **Always Free 특화**
 - ✅ **E2.1.Micro** (2개까지)
 - ✅ **A1.Flex** (4 OCPU, 24GB RAM)
-- ✅ 부트볼륨 200GB 무료
+- ✅ 부트볼륨 무료(기본 100GB로 생성, 설정으로 변경 가능)
 - ✅ 실시간 한도 체크
 
 </td>
@@ -240,6 +242,8 @@ pm2 status
 pm2 logs oci-discord-bot
 ```
 
+> 참고: 봇 경로(oci-script-and-bot.sh)로 인스턴스를 생성할 때도 `config.json`의 `bootVolumeConfig.sizeInGBs` 값이 자동 적용되어 `--source-boot-volume-size-in-gbs` 플래그로 전달됩니다(기본 100GB).
+
 ---
 
 ## 🎮 사용법
@@ -397,10 +401,11 @@ sudo oci --version
 
 **자동 해결 방법:**
 ```bash
-# 스크립트가 자동으로 처리하지만, 수동으로도 가능합니다
-sudo ln -s $HOME/bin/oci /usr/local/bin/oci
-sudo ln -s $HOME/.local/bin/oci /usr/local/bin/oci
-sudo ln -s $HOME/lib/oracle-cli/bin/oci /usr/local/bin/oci
+# 스크립트가 자동으로 symlink를 시도하지만, 수동 처리도 가능합니다
+if command -v oci >/dev/null 2>&1; then
+  sudo ln -sf "$(which oci)" /usr/local/bin/oci
+  sudo oci --version
+fi
 ```
 
 ### ❌ API 키 권한 오류
