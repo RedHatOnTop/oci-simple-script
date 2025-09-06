@@ -63,6 +63,105 @@
 
 ---
 
+## 💎 Oracle Cloud Always Free란 무엇인가요?
+
+<div align="center">
+
+**Oracle Cloud Always Free**는 강력한 클라우드 인프라를 영구적으로 무료로 제공합니다 - 개발자, 학생, 소규모 프로젝트에 완벽해요!
+
+</div>
+
+### 🎁 Oracle Always Free가 제공하는 것들
+
+<table>
+<tr>
+<td width="50%">
+
+#### 🖥️ **컴퓨트 인스턴스**
+- **2개 E2.1.Micro** (AMD EPYC)
+  - 각각 1 OCPU, 1GB RAM
+  - 용도: 웹서버, API, 봇
+- **4 OCPU A1.Flex** (ARM Ampere)
+  - 총 4 OCPU, 24GB RAM
+  - 설정 가능: 1-4개 인스턴스
+
+</td>
+<td width="50%">
+
+#### 💾 **스토리지 & 네트워크**
+- **200GB 블록 스토리지**
+- **10GB 오브젝트 스토리지**
+- **로드 밸런서** (10 Mbps)
+- **VCN & 보안 목록**
+- **Autonomous Database** (20GB)
+
+</td>
+</tr>
+</table>
+
+### 🎮 인기 사용 사례 & 예시
+
+<details>
+<summary><b>🎯 A1.Flex (ARM) - 고성능 애플리케이션</b></summary>
+
+#### 🎮 **게임 서버**
+```bash
+# 마인크래프트 서버 (권장: 2 OCPU, 8GB)
+Shape: VM.Standard.A1.Flex
+설정: 2 OCPU, 8GB RAM
+플레이어: ~10-20명 동시 접속
+성능: 모드 서버에도 우수한 성능
+```
+
+#### 🌐 **개발 환경**
+```bash
+# 풀스택 개발 환경
+Shape: VM.Standard.A1.Flex  
+설정: 4 OCPU, 24GB RAM
+스택: Docker, Kubernetes, CI/CD
+용도: 팀 개발, 마이크로서비스
+```
+
+#### 🤖 **AI/ML 워크로드**
+```bash
+# 머신러닝 학습
+설정: 4 OCPU, 24GB RAM
+프레임워크: TensorFlow, PyTorch
+용도: 모델 학습, 데이터 처리
+```
+
+</details>
+
+<details>
+<summary><b>⚡ E2.1.Micro (AMD) - 경량 서비스</b></summary>
+
+#### 🌐 **웹 애플리케이션**
+- 개인 웹사이트 & 블로그
+- REST API & 마이크로서비스
+- Discord/Telegram 봇
+- 모니터링 서비스
+
+#### 📊 **데이터베이스 & 캐싱**
+- 소규모 데이터베이스 (PostgreSQL, MySQL)
+- Redis 캐시 서버
+- 메시지 큐
+- 로그 수집기
+
+</details>
+
+### 💰 Always Free vs 유료 플랜 비교
+
+| 기능 | Always Free | 유료 플랜 |
+|:---:|:---:|:---:|
+| **비용** | 월 $0 영구 무료 | 사용량 기반 과금 |
+| **성능** | 프로덕션 가능 | 확장 가능 |
+| **기간** | 시간 제한 없음 | 유연함 |
+| **지원** | 커뮤니티 | 전문 지원 |
+
+> **💡 프로 팁**: Always Free는 학습, 개발, 소규모 프로덕션 워크로드에 완벽합니다. 더 많은 리소스가 필요할 때 유료 플랜으로 확장하세요!
+
+---
+
 ## ✨ 특징
 
 <table>

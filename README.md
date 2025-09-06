@@ -61,6 +61,105 @@
 
 ---
 
+## 💎 Oracle Cloud Always Free - What Is It?
+
+<div align="center">
+
+**Oracle Cloud Always Free** provides powerful cloud infrastructure at no cost forever - perfect for developers, students, and small projects!
+
+</div>
+
+### 🎁 What Oracle Always Free Provides
+
+<table>
+<tr>
+<td width="50%">
+
+#### 🖥️ **Compute Instances**
+- **2x E2.1.Micro** (AMD EPYC)
+  - 1 OCPU, 1GB RAM each
+  - Perfect for: Web servers, APIs, bots
+- **4 OCPU A1.Flex** (ARM Ampere)
+  - 4 OCPU, 24GB RAM total
+  - Configurable: 1-4 instances
+
+</td>
+<td width="50%">
+
+#### 💾 **Storage & Network**
+- **200GB Block Storage**
+- **10GB Object Storage**
+- **Load Balancer** (10 Mbps)
+- **VCN & Security Lists**
+- **Autonomous Database** (20GB)
+
+</td>
+</tr>
+</table>
+
+### 🎮 Popular Use Cases & Examples
+
+<details>
+<summary><b>🎯 A1.Flex (ARM) - High Performance Applications</b></summary>
+
+#### 🎮 **Gaming Servers**
+```bash
+# Minecraft Server (Recommended: 2 OCPU, 8GB)
+Shape: VM.Standard.A1.Flex
+Config: 2 OCPU, 8GB RAM
+Players: ~10-20 concurrent
+Performance: Excellent for modded servers
+```
+
+#### 🌐 **Development Environment**
+```bash
+# Full Development Stack
+Shape: VM.Standard.A1.Flex  
+Config: 4 OCPU, 24GB RAM
+Stack: Docker, Kubernetes, CI/CD
+Perfect for: Team development, microservices
+```
+
+#### 🤖 **AI/ML Workloads**
+```bash
+# Machine Learning Training
+Config: 4 OCPU, 24GB RAM
+Frameworks: TensorFlow, PyTorch
+Use: Model training, data processing
+```
+
+</details>
+
+<details>
+<summary><b>⚡ E2.1.Micro (AMD) - Lightweight Services</b></summary>
+
+#### 🌐 **Web Applications**
+- Personal websites & blogs
+- REST APIs & microservices
+- Discord/Telegram bots
+- Monitoring services
+
+#### 📊 **Database & Caching**
+- Small databases (PostgreSQL, MySQL)
+- Redis cache servers
+- Message queues
+- Log aggregators
+
+</details>
+
+### 💰 Always Free vs Paid Comparison
+
+| Feature | Always Free | Paid Plans |
+|:---:|:---:|:---:|
+| **Cost** | $0/month forever | Pay-as-you-use |
+| **Performance** | Production-ready | Scalable |
+| **Duration** | No time limit | Flexible |
+| **Support** | Community | Professional |
+
+> **💡 Pro Tip**: Always Free is perfect for learning, development, and small production workloads. Scale to paid plans when you need more resources!
+
+---
+
 ## ✨ Features
 
 <table>

@@ -23,7 +23,7 @@ EARLY_CONFIG_FILE="config.json"
 
 # Offer language choice only if not preset via config
 if [ -f "$EARLY_CONFIG_FILE" ]; then
-  PRESET_LANG=$(grep -o '"LANGUAGE"[[:space:]]*:[[:space:]]*"[a-z]*"' "$EARLY_CONFIG_FILE" 2>/dev/null | sed -E 's/.*:"([a-z]+)"/\1/')
+  PRESET_LANG=$(grep -o '"LANGUAGE"[[:space:]]*:[[:space:]]*"[a-z]*"' "$EARLY_CONFIG_FILE" 2>/dev/null | sed -E 's/.*"([a-z]+)".*/\1/')
   case "$PRESET_LANG" in
     ko|en) LANG_CHOICE="$PRESET_LANG" ;;
   esac
@@ -869,9 +869,6 @@ function tryLaunchInstance(interaction = null, manual = false) {
       }
       
       errorMsg += `\n\n**Attempted Command:**\n\`\`\`bash\n${ociCommand}\n\`\`\``;
-      if (!parsedError) {
-        errorMsg += `\n\n**Response:**\n\`\`\`\n${combined}\n\`\`\``;
-      }
     }
     
     sendEmbed(interaction, status, errorMsg, manual);
