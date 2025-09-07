@@ -682,7 +682,7 @@ function tryLaunchInstance(interaction = null, manual = false) {
   
   // config.json 기반 OCI 명령어 구성
   const bootArg = (ociConfig.bootVolumeConfig && ociConfig.bootVolumeConfig.sizeInGBs)
-    ? ` --source-boot-volume-size-in-gbs ${ociConfig.bootVolumeConfig.sizeInGBs}`
+    ? ` --boot-volume-size-in-gbs ${ociConfig.bootVolumeConfig.sizeInGBs}`
     : '';
 
   const ociCommand = [
