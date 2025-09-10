@@ -63,12 +63,21 @@ fi
 setup_sudo_environment() {
   # sudo 실행 확인 및 안내
   if [[ $EUID -ne 0 ]]; then
-    echo -e "\033[1;33m⚠️ 이 스크립트는 pm2 전역 설치를 위해 sudo 권한이 필요합니다.\033[0m"
-    echo ""
-    echo -e "\033[0;36mℹ️ 다음 명령어로 다시 실행하세요:\033[0m"
-    echo -e "\033[1;32msudo bash $0\033[0m"
-    echo ""
-    echo -e "\033[1;33m💡 참고: sudo 실행 시에도 사용자 계정의 OCI CLI 설정을 사용합니다.\033[0m"
+    if [ "$LANG_CHOICE" = "ko" ]; then
+      echo -e "\033[1;33m⚠️ 이 스크립트는 pm2 전역 설치를 위해 sudo 권한이 필요합니다.\033[0m"
+      echo ""
+      echo -e "\033[0;36mℹ️ 다음 명령어로 다시 실행하세요:\033[0m"
+      echo -e "\033[1;32msudo bash $0\033[0m"
+      echo ""
+      echo -e "\033[1;33m💡 참고: sudo 실행 시에도 사용자 계정의 OCI CLI 설정을 사용합니다.\033[0m"
+    else
+      echo -e "\033[1;33m⚠️ This script requires sudo privileges for global pm2 installation.\033[0m"
+      echo ""
+      echo -e "\033[0;36mℹ️ Please run with the following command:\033[0m"
+      echo -e "\033[1;32msudo bash $0\033[0m"
+      echo ""
+      echo -e "\033[1;33m💡 Note: Your user account's OCI CLI configuration will be used even with sudo.\033[0m"
+    fi
     exit 1
   fi
   
@@ -87,7 +96,11 @@ setup_sudo_environment() {
   for oci_path in "${user_oci_paths[@]}"; do
     if [[ -x "$oci_path" ]]; then
       if [[ ! -L "/usr/local/bin/oci" ]]; then
-        echo -e "\033[0;36mℹ️ $(date '+%H:%M:%S')\033[0m OCI CLI 심볼릭 링크 생성: $oci_path -> /usr/local/bin/oci"
+        if [ "$LANG_CHOICE" = "ko" ]; then
+          echo -e "\033[0;36mℹ️ $(date '+%H:%M:%S')\033[0m OCI CLI 심볼릭 링크 생성: $oci_path -> /usr/local/bin/oci"
+        else
+          echo -e "\033[0;36mℹ️ $(date '+%H:%M:%S')\033[0m Creating OCI CLI symlink: $oci_path -> /usr/local/bin/oci"
+        fi
         ln -sf "$oci_path" /usr/local/bin/oci
       fi
       break
@@ -98,17 +111,32 @@ setup_sudo_environment() {
   export OCI_CLI_RC_FILE="$ORIGINAL_HOME/.oci/config"
   export OCI_CONFIG_FILE="$ORIGINAL_HOME/.oci/config"
   
-  echo -e "\033[0;36mℹ️ $(date '+%H:%M:%S')\033[0m 환경 설정 완료 - 원래 사용자: $ORIGINAL_USER"
-  echo -e "\033[0;36mℹ️ $(date '+%H:%M:%S')\033[0m OCI 설정 경로: $OCI_CONFIG_FILE"
+  if [ "$LANG_CHOICE" = "ko" ]; then
+    echo -e "\033[0;36mℹ️ $(date '+%H:%M:%S')\033[0m 환경 설정 완료 - 원래 사용자: $ORIGINAL_USER"
+    echo -e "\033[0;36mℹ️ $(date '+%H:%M:%S')\033[0m OCI 설정 경로: $OCI_CONFIG_FILE"
+  else
+    echo -e "\033[0;36mℹ️ $(date '+%H:%M:%S')\033[0m Environment setup complete - Original user: $ORIGINAL_USER"
+    echo -e "\033[0;36mℹ️ $(date '+%H:%M:%S')\033[0m OCI config path: $OCI_CONFIG_FILE"
+  fi
   
   # OCI CLI 접근 가능 여부 확인
   if command -v oci >/dev/null 2>&1; then
     local oci_path=$(which oci)
-    echo -e "\033[0;32m✅ $(date '+%H:%M:%S')\033[0m OCI CLI 발견: $oci_path"
+    if [ "$LANG_CHOICE" = "ko" ]; then
+      echo -e "\033[0;32m✅ $(date '+%H:%M:%S')\033[0m OCI CLI 발견: $oci_path"
+    else
+      echo -e "\033[0;32m✅ $(date '+%H:%M:%S')\033[0m OCI CLI found: $oci_path"
+    fi
   else
-    echo -e "\033[1;33m⚠️ $(date '+%H:%M:%S')\033[0m OCI CLI를 찾을 수 없습니다."
-    echo "  사용자 경로를 확인하거나 다음 명령어로 수동 링크 생성:"
-    echo "  sudo ln -s /home/\$USER/bin/oci /usr/local/bin/oci"
+    if [ "$LANG_CHOICE" = "ko" ]; then
+      echo -e "\033[1;33m⚠️ $(date '+%H:%M:%S')\033[0m OCI CLI를 찾을 수 없습니다."
+      echo "  사용자 경로를 확인하거나 다음 명령어로 수동 링크 생성:"
+      echo "  sudo ln -s /home/\$USER/bin/oci /usr/local/bin/oci"
+    else
+      echo -e "\033[1;33m⚠️ $(date '+%H:%M:%S')\033[0m OCI CLI not found."
+      echo "  Check user paths or create manual link with:"
+      echo "  sudo ln -s /home/\$USER/bin/oci /usr/local/bin/oci"
+    fi
   fi
 }
 
@@ -323,18 +351,39 @@ log success "OCI config 파일 생성 완료: $OCI_CONFIG_PATH"
 
 # 4. Node.js, npm, pm2 설치
 echo ""
-log info "📦 Node.js 및 의존성 설치 중..."
+if [ "$LANG_CHOICE" = "ko" ]; then
+  log info "📦 Node.js 및 의존성 설치 중..."
+else
+  log info "📦 Installing Node.js and dependencies..."
+fi
+
 if ! command -v node > /dev/null; then
-  log info "Node.js 설치 중..."
+  if [ "$LANG_CHOICE" = "ko" ]; then
+    log info "Node.js 설치 중..."
+  else
+    log info "Installing Node.js..."
+  fi
   curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
   sudo apt-get install -y nodejs
-  log success "Node.js 설치 완료"
+  if [ "$LANG_CHOICE" = "ko" ]; then
+    log success "Node.js 설치 완료"
+  else
+    log success "Node.js installation completed"
+  fi
 else
-  log success "Node.js 이미 설치됨: $(node --version)"
+  if [ "$LANG_CHOICE" = "ko" ]; then
+    log success "Node.js 이미 설치됨: $(node --version)"
+  else
+    log success "Node.js already installed: $(node --version)"
+  fi
 fi
 
 if ! command -v pm2 > /dev/null; then
-  log info "pm2 설치 중..."
+  if [ "$LANG_CHOICE" = "ko" ]; then
+    log info "pm2 설치 중..."
+  else
+    log info "Installing pm2..."
+  fi
   
   # npm 권한 확인 및 처리
   if ! npm install -g pm2 2>/dev/null; then
@@ -348,16 +397,33 @@ if ! command -v pm2 > /dev/null; then
       npm install -g pm2
     fi
   fi
-  log success "pm2 설치 완료"
+  if [ "$LANG_CHOICE" = "ko" ]; then
+    log success "pm2 설치 완료"
+  else
+    log success "pm2 installation completed"
+  fi
 else
-  log success "pm2 이미 설치됨"
+  if [ "$LANG_CHOICE" = "ko" ]; then
+    log success "pm2 이미 설치됨"
+  else
+    log success "pm2 already installed"
+  fi
 fi
 
 # 5. package.json 및 의존성 설치
 echo ""
-log info "📋 Discord.js 의존성 설치 중..."
+if [ "$LANG_CHOICE" = "ko" ]; then
+  log info "📋 Discord.js 의존성 설치 중..."
+else
+  log info "📋 Installing Discord.js dependencies..."
+fi
+
 if [ ! -f "package.json" ]; then
-  log info "package.json 생성 중..."
+  if [ "$LANG_CHOICE" = "ko" ]; then
+    log info "package.json 생성 중..."
+  else
+    log info "Creating package.json..."
+  fi
   cat <<EOF > package.json
 {
   "name": "oci-discord-bot",
@@ -377,12 +443,20 @@ fi
 
 if [ ! -d "node_modules" ]; then
   npm install
-  log success "의존성 설치 완료"
+  if [ "$LANG_CHOICE" = "ko" ]; then
+    log success "의존성 설치 완료"
+  else
+    log success "Dependencies installation completed"
+  fi
 fi
 
 # 6. .env 파일 생성 (Node.js용)
 echo ""
-log info "🔧 .env 파일 생성 중..."
+if [ "$LANG_CHOICE" = "ko" ]; then
+  log info "🔧 .env 파일 생성 중..."
+else
+  log info "🔧 Creating .env file..."
+fi
 cat <<EOF > .env
 DISCORD_TOKEN=${DISCORD_TOKEN}
 DISCORD_CLIENT_ID=${DISCORD_CLIENT_ID}
@@ -396,10 +470,18 @@ REGION=${REGION}
 KEY_FILE=${KEY_FILE_EXPANDED}
 EOF
 
-log success ".env 파일 생성 완료"
+if [ "$LANG_CHOICE" = "ko" ]; then
+  log success ".env 파일 생성 완료"
+else
+  log success ".env file created successfully"
+fi
 # 7. Discord 봇 코드 생성 (config.json 기반)
 echo ""
-log info "🤖 Discord 봇 코드 생성 중..."
+if [ "$LANG_CHOICE" = "ko" ]; then
+  log info "🤖 Discord 봇 코드 생성 중..."
+else
+  log info "🤖 Generating Discord bot code..."
+fi
 cat <<'EOF' > oci-discord-bot.js
 require('dotenv').config();
 const { Client, GatewayIntentBits, REST, Routes, SlashCommandBuilder, EmbedBuilder } = require('discord.js');
@@ -1641,7 +1723,7 @@ async function handleScheduleCommand(interaction) {
   scheduleInterval = newInterval;
   
   // 🔧 FIX: 스케줄 타이머 재시작 - 이 부분이 빠져있어서 간격 변경이 적용되지 않았음
-  if (global.updateSchedule) {
+  if (typeof global.updateSchedule === 'function') {
     global.updateSchedule();
   }
   
@@ -1799,10 +1881,19 @@ client.on('error', error => {
 client.login(TOKEN);
 EOF
 
-log success "Discord 봇 코드 생성 완료!"
+if [ "$LANG_CHOICE" = "ko" ]; then
+  log success "Discord 봇 코드 생성 완료!"
+else
+  log success "Discord bot code generated successfully!"
+fi
+
 # 8. PM2로 봇 실행
 echo ""
-log info "🚀 PM2로 Discord 봇 시작 중..."
+if [ "$LANG_CHOICE" = "ko" ]; then
+  log info "🚀 PM2로 Discord 봇 시작 중..."
+else
+  log info "🚀 Starting Discord bot with PM2..."
+fi
 
 # 기존 봇 프로세스 정리
 pm2 delete oci-discord-bot >/dev/null 2>&1 || true
@@ -1811,27 +1902,55 @@ pm2 delete oci-discord-bot >/dev/null 2>&1 || true
 pm2 start oci-discord-bot.js --name oci-discord-bot --time
 pm2 save
 
-log success "🎉 OCI Discord Bot 설정이 모두 완료되었습니다!"
-echo ""
-log info "📊 봇 상태 확인:"
-pm2 status
+if [ "$LANG_CHOICE" = "ko" ]; then
+  log success "🎉 OCI Discord Bot 설정이 모두 완료되었습니다!"
+  echo ""
+  log info "📊 봇 상태 확인:"
+  pm2 status
+  
+  echo ""
+  log bot "🤖 Discord에서 다음 슬래시 명령어를 사용할 수 있습니다:"
+  echo "  /status  - 봇 상태 확인"
+  echo "  /launch  - 즉시 인스턴스 생성"
+  echo "  /log     - 최근 로그 확인"
+  echo "  /config  - OCI 설정 확인"
+  echo "  /stop    - 자동 생성 중지"
+  echo "  /start   - 자동 생성 시작"
+  echo "  /help    - 도움말"
+else
+  log success "🎉 OCI Discord Bot setup completed successfully!"
+  echo ""
+  log info "📊 Bot status check:"
+  pm2 status
+  
+  echo ""
+  log bot "🤖 Available slash commands in Discord:"
+  echo "  /status  - Check bot status"
+  echo "  /launch  - Launch instance immediately"
+  echo "  /log     - View recent logs"
+  echo "  /config  - Check OCI configuration"
+  echo "  /stop    - Stop auto-creation"
+  echo "  /start   - Start auto-creation"
+  echo "  /help    - Show help"
+fi
 
 echo ""
-log bot "🤖 Discord에서 다음 슬래시 명령어를 사용할 수 있습니다:"
-echo "  /status  - 봇 상태 확인"
-echo "  /launch  - 즉시 인스턴스 생성"
-echo "  /log     - 최근 로그 확인"
-echo "  /config  - OCI 설정 확인"
-echo "  /stop    - 자동 생성 중지"
-echo "  /start   - 자동 생성 시작"
-echo "  /help    - 도움말"
-
-echo ""
-log info "📋 유용한 명령어:"
-echo "  pm2 logs oci-discord-bot  # 봇 로그 실시간 확인"
-echo "  pm2 restart oci-discord-bot  # 봇 재시작"
-echo "  pm2 stop oci-discord-bot     # 봇 중지"
-echo "  tail -f oci_bot.log          # 봇 활동 로그 확인"
-
-echo ""
-log success "✅ 설정 완료! Discord에서 봇을 사용해보세요."
+if [ "$LANG_CHOICE" = "ko" ]; then
+  log info "📋 유용한 명령어:"
+  echo "  pm2 logs oci-discord-bot  # 봇 로그 실시간 확인"
+  echo "  pm2 restart oci-discord-bot  # 봇 재시작"
+  echo "  pm2 stop oci-discord-bot     # 봇 중지"
+  echo "  tail -f oci_bot.log          # 봇 활동 로그 확인"
+  
+  echo ""
+  log success "✅ 설정 완료! Discord에서 봇을 사용해보세요."
+else
+  log info "📋 Useful commands:"
+  echo "  pm2 logs oci-discord-bot  # View bot logs in real-time"
+  echo "  pm2 restart oci-discord-bot  # Restart bot"
+  echo "  pm2 stop oci-discord-bot     # Stop bot"
+  echo "  tail -f oci_bot.log          # Monitor bot activity logs"
+  
+  echo ""
+  log success "✅ Setup complete! Try using the bot in Discord."
+fi
