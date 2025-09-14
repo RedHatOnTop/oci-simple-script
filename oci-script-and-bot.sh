@@ -529,7 +529,7 @@ const translations = {
     instances_filter_desc: '필터 옵션',
     resources_desc: '💰 Always Free 자원 사용량 조회',
     schedule_desc: '⏰ 자동 생성 스케줄 설정',
-    schedule_interval_desc: '시도 간격 (3-60분)',
+  schedule_interval_desc: '시도 간격 (1-60분)',
     alert_desc: '🔔 알림 설정 관리',
     alert_type_desc: '알림 유형',
     alert_enabled_desc: '알림 활성화/비활성화',
@@ -596,7 +596,7 @@ const translations = {
     instances_filter_desc: 'Filter options',
     resources_desc: '💰 Always Free resource usage',
     schedule_desc: '⏰ Set automatic creation schedule',
-    schedule_interval_desc: 'Attempt interval (3-60 minutes)',
+  schedule_interval_desc: 'Attempt interval (1-60 minutes)',
     alert_desc: '🔔 Manage notification settings',
     alert_type_desc: 'Notification type',
     alert_enabled_desc: 'Enable/disable notifications',
@@ -656,7 +656,7 @@ function t(key) {
 }
 
 // 🆕 새로운 기능을 위한 변수들
-let scheduleInterval = 5; // 기본 5분 간격 (분)
+let scheduleInterval = 2; // 기본 2분 간격 (분) - 1~2분 재시도 권장
 let alertSettings = {
   success: true,
   failure: false,
@@ -670,6 +670,11 @@ let dailyStats = {
 };
 let instanceCache = []; // 인스턴스 목록 캐시
 let lastStatsUpdate = 0; // 마지막 통계 업데이트 시간
+// ⏳ Rate limit(429) 쿨다운 및 스케줄 관리 변수
+let cooldownUntil = 0;       // ms timestamp when cooldown ends
+let cooldownNotified = false; // notify only once per cooldown window
+let nextAttemptAt = 0;       // ms timestamp for next scheduled attempt
+let scheduleTimer;           // handle for dynamic scheduler
 
 function getUptime() {
   const ms = Date.now() - startTime;
@@ -684,6 +689,51 @@ function writeLog(msg) {
   const logMsg = `[${timestamp}] ${msg}`;
   fs.appendFileSync(LOG_FILE, logMsg + '\n');
   console.log(logMsg);
+}
+
+// 🧮 평균 시도 간격(분) 계산: 연속 로그 간의 간격의 평균
+function computeAverageIntervalMinutes(results) {
+  if (!results || results.length < 2) return null;
+  let sum = 0; let count = 0;
+  for (let i = 0; i < results.length - 1; i++) {
+    const t1 = new Date(results[i].time).getTime();
+    const t2 = new Date(results[i + 1].time).getTime();
+    const dt = t1 - t2; // 최신이 앞에 오므로 양수이어야 정상
+    if (dt > 0 && dt < 6 * 60 * 60 * 1000) { // 6시간 초과 outlier 제외
+      sum += dt; count += 1;
+    }
+  }
+  if (count === 0) return null;
+  return (sum / count) / 60000; // minutes
+}
+
+// ⏱️ 남은 시간 텍스트 (분 단위, 소수 1자리)
+function formatEta(ms) {
+  if (!ms || ms <= 0) return LANG === 'ko' ? '곧' : 'soon';
+  const min = ms / 60000;
+  return (LANG === 'ko') ? `약 ${min.toFixed(1)}분 후` : `~${min.toFixed(1)} min`;
+}
+
+// 🚨 429 쿨다운 진입 알림 (한 번만)
+async function notifyCooldown() {
+  try {
+    const channel = await client.channels.fetch(CHANNEL_ID);
+    const remainMs = Math.max(0, cooldownUntil - Date.now());
+    const etaText = formatEta(remainMs);
+    const untilISO = new Date(cooldownUntil).toISOString();
+    const embed = new EmbedBuilder()
+      .setTitle(LANG === 'ko' ? '⏳ 429 레이트 리밋 쿨다운 진입' : '⏳ Entered 429 Rate Limit Cooldown')
+      .setDescription(LANG === 'ko' ? 'OCI API에서 Too Many Requests(429)가 감지되어 잠시 대기합니다.' : 'Detected Too Many Requests (429) from OCI API. Pausing attempts temporarily.')
+      .addFields(
+        { name: LANG === 'ko' ? '재개 예정' : 'Resume At', value: `${untilISO} (${etaText})`, inline: false }
+      )
+      .setColor(0xffa500)
+      .setTimestamp();
+    await channel.send({ content: '⚠️ Rate limit', embeds: [embed] });
+    cooldownNotified = true;
+  } catch (e) {
+    writeLog('Failed to notify cooldown: ' + e);
+  }
 }
 
 function sendEmbed(interaction, status, errorMsg = null, manual = false) {
@@ -807,6 +857,7 @@ function tryLaunchInstance(interaction = null, manual = false) {
     // 성공/실패 판정
     let status = false;
     let errorMsg = null;
+    let rateLimited = false;
     
     if (error) {
       errorMsg = `Command execution error: ${error.message}`;
@@ -880,6 +931,12 @@ function tryLaunchInstance(interaction = null, manual = false) {
         if (parsedError.details) {
           errorMsg += `\n**Request ID:** ${parsedError.details}`;
         }
+        // 429 / TooManyRequests 감지
+        const codeStr = String(parsedError.code || '').toLowerCase();
+        const msgStr = String(parsedError.message || '').toLowerCase();
+        if (codeStr.includes('429') || codeStr.includes('toomanyrequests') || msgStr.includes('too many requests') || msgStr.includes('rate limit')) {
+          rateLimited = true;
+        }
       } else {
         // Fallback to pattern matching for known error types
         if (combined.toLowerCase().includes('out of capacity')) {
@@ -896,6 +953,10 @@ function tryLaunchInstance(interaction = null, manual = false) {
           errorMsg = '**Resource Conflict:** Resource name may already exist';
         } else if (combined.toLowerCase().includes('quotaexceeded')) {
           errorMsg = '**Quota Exceeded:** Service quota limit reached';
+        }
+        const low = combined.toLowerCase();
+        if (low.includes(' 429 ') || low.includes('too many requests') || low.includes('rate limit')) {
+          rateLimited = true;
         }
       }
       
@@ -1004,6 +1065,11 @@ function tryLaunchInstance(interaction = null, manual = false) {
         if (parsedError.details) {
           errorMsg += `\n**Request ID:** ${parsedError.details}`;
         }
+        const codeStr = String(parsedError.code || '').toLowerCase();
+        const msgStr = String(parsedError.message || '').toLowerCase();
+        if (codeStr.includes('429') || codeStr.includes('toomanyrequests') || msgStr.includes('too many requests') || msgStr.includes('rate limit')) {
+          rateLimited = true;
+        }
       } else if (combined.toLowerCase().includes('out of capacity')) {
         errorMsg = '**Out of Capacity:** No available resources in the selected availability domain';
       } else if (combined.toLowerCase().includes('invalid')) {
@@ -1016,6 +1082,17 @@ function tryLaunchInstance(interaction = null, manual = false) {
     }
     
     sendEmbed(interaction, status, errorMsg, manual);
+
+    // ⏳ 429 발생 시 10분 쿨다운 진입 및 스케줄 재계산
+    if (rateLimited) {
+      cooldownUntil = Date.now() + (10 * 60 * 1000); // 10분
+      cooldownNotified = true; // 바로 알림 전송하므로 플래그 설정
+      writeLog('Entered 429 cooldown window for 10 minutes');
+      // 알림 1회 전송
+      notifyCooldown();
+      // 다음 시도 일정 재설정
+      if (typeof global.updateSchedule === 'function') global.updateSchedule();
+    }
     
     // 성공 시 추가 알림 (채널 전체에)
     if (status && !interaction) {
@@ -1101,7 +1178,7 @@ const commands = [
     .addIntegerOption(option =>
       option.setName('interval')
         .setDescription(t('schedule_interval_desc'))
-        .setMinValue(3)
+        .setMinValue(1)
         .setMaxValue(60)
         .setRequired(true)
     ),
@@ -1164,9 +1241,18 @@ client.on('interactionCreate', async interaction => {
         const successRate = recentAttempts.length > 0 ? 
           ((recentSuccesses / recentAttempts.length) * 100).toFixed(1) : '0.0';
         
-        // 다음 시도까지 남은 시간 계산
-        const nextAttemptTime = autoLaunch ? 
-          `약 ${scheduleInterval}분 후` : '자동 생성 중지됨';
+        // 다음 시도까지 남은 시간 계산 (쿨다운 고려)
+        let nextAttemptTime;
+        if (!autoLaunch) {
+          nextAttemptTime = LANG === 'ko' ? '자동 생성 중지됨' : 'Auto creation stopped';
+        } else if (Date.now() < cooldownUntil) {
+          const remainMs = cooldownUntil - Date.now();
+          nextAttemptTime = (LANG === 'ko') ? `쿨다운 중 • ${formatEta(remainMs)}` : `Cooldown • ${formatEta(remainMs)}`;
+        } else if (nextAttemptAt && nextAttemptAt > Date.now()) {
+          nextAttemptTime = formatEta(nextAttemptAt - Date.now());
+        } else {
+          nextAttemptTime = (LANG === 'ko') ? `약 ${scheduleInterval}분 후` : `~${scheduleInterval} min`;
+        }
         
         const embed = new EmbedBuilder()
           .setTitle('🤖 ' + t('bot_status'))
@@ -1371,6 +1457,10 @@ async function handleStatsCommand(interaction) {
   const successes = filteredResults.filter(r => r.status).length;
   const successRate = totalAttempts > 0 ? ((successes / totalAttempts) * 100).toFixed(1) : 0;
   
+  // 동적 평균 간격 계산
+  const avgMin = computeAverageIntervalMinutes(filteredResults);
+  const avgText = (avgMin && !isNaN(avgMin)) ? `${avgMin.toFixed(1)}분` : `${scheduleInterval}분`;
+
   const statsEmbed = new EmbedBuilder()
     .setTitle(`📊 ${periodName} 상세 통계`)
     .addFields(
@@ -1378,7 +1468,7 @@ async function handleStatsCommand(interaction) {
       { name: '✅ 성공 횟수', value: successes.toString(), inline: true },
       { name: '📈 성공률', value: `${successRate}%`, inline: true },
       { name: '❌ 실패 횟수', value: (totalAttempts - successes).toString(), inline: true },
-      { name: '⏰ 평균 간격', value: `${scheduleInterval}분`, inline: true },
+      { name: '⏰ 평균 간격', value: avgText, inline: true },
       { name: '🚀 자동 생성', value: autoLaunch ? '🟢 활성화' : '🔴 비활성화', inline: true }
     )
     .setColor(successRate > 50 ? 0x00ff00 : successRate > 20 ? 0xffff00 : 0xff0000)
@@ -1790,30 +1880,46 @@ client.once('ready', () => {
   writeLog('🤖 Discord bot is ready!');
   console.log(`✅ 봇이 ${client.user.tag}로 로그인했습니다!`);
   
-  // 🆕 개선된 스케줄링 시스템
-  let scheduleTimer;
-  
-  function startSchedule() {
-    if (scheduleTimer) {
-      clearInterval(scheduleTimer);
-    }
-    
-    writeLog(`Setting up schedule: every ${scheduleInterval} minutes`);
-    scheduleTimer = setInterval(() => {
-      if (autoLaunch) {
-        writeLog('⏰ Scheduled instance creation attempt');
-        tryLaunchInstance();
+  // 🆕 동적 스케줄링 (setTimeout 기반, 쿨다운/지터 반영)
+  function scheduleNextAttempt() {
+    if (!autoLaunch) return; // 중지 시 스케줄 안 잡음
+    const now = Date.now();
+    let delayMs;
+    if (now < cooldownUntil) {
+      delayMs = cooldownUntil - now;
+      if (!cooldownNotified) { cooldownNotified = true; notifyCooldown(); }
+    } else {
+      // 지터: scheduleInterval 기준 ±30초,
+      // 단, scheduleInterval이 2분 이하이면 60~120초 범위로 제한 (1~2분 권장)
+      const baseMs = scheduleInterval * 60 * 1000;
+      if (scheduleInterval <= 2) {
+        // 60~120초 사이 랜덤
+        delayMs = (60 + Math.random() * 60) * 1000;
+      } else {
+        const jitter = (Math.random() * 60 - 30) * 1000; // -30s ~ +30s
+        delayMs = Math.max(60 * 1000, baseMs + jitter);
       }
-    }, scheduleInterval * 60 * 1000);
+    }
+    nextAttemptAt = now + delayMs;
+    if (scheduleTimer) clearTimeout(scheduleTimer);
+    writeLog(`Next attempt scheduled in ~${(delayMs/60000).toFixed(2)} min`);
+    scheduleTimer = setTimeout(() => {
+      if (!autoLaunch) return;
+      writeLog('⏰ Scheduled instance creation attempt');
+      tryLaunchInstance();
+      // 다음 시도 또 예약
+      scheduleNextAttempt();
+    }, delayMs);
   }
-  
-  // 초기 스케줄 시작
-  startSchedule();
-  
+
   // 스케줄 변경을 위한 글로벌 함수
   global.updateSchedule = () => {
-    startSchedule();
+    scheduleNextAttempt();
   };
+
+  // 초기: 즉시 1회 시도 후 다음 스케줄 등록
+  tryLaunchInstance();
+  scheduleNextAttempt();
   
   // 🆕 일일 요약 알림 (매일 자정)
   const now = new Date();
@@ -1835,9 +1941,7 @@ client.once('ready', () => {
     }, 24 * 60 * 60 * 1000);
   }, msUntilMidnight);
   
-  // 시작 시 첫 번째 시도
-  writeLog('Starting initial instance creation attempt...');
-  tryLaunchInstance();
+  // 시작 시 첫 번째 즉시 시도는 scheduleNextAttempt 내부 주기와 중복될 수 있으므로 생략
 });
 
 // 🆕 일일 요약 함수
