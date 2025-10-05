@@ -675,6 +675,52 @@ let cooldownUntil = 0;       // ms timestamp when cooldown ends
 let cooldownNotified = false; // notify only once per cooldown window
 let nextAttemptAt = 0;       // ms timestamp for next scheduled attempt
 let scheduleTimer;           // handle for dynamic scheduler
+// 429 연속 발생 지수 백오프 추적
+let rateLimitStreak = 0;     // 연속 429 횟수
+let lastRateLimitAt = 0;     // 마지막 429 시간(ms)
+
+// 📆 프라임 시간대 가중 재시도 설정
+// 기본값: 지역 로컬 시간 01:00~02:00 사이에 더 촘촘히 (1~2분), 그 외엔 3~5분 권장
+let useWindowWeighting = true; // 필요 시 /schedule 등으로 끌 수 있도록 변수화
+const PRIME_WINDOWS = [
+  { start: '01:00', end: '02:00', minIntervalMin: 1, maxIntervalMin: 2 }
+];
+
+function parseHHMMToMinutes(hhmm) {
+  const [h, m] = hhmm.split(':').map(x => parseInt(x, 10));
+  return (h % 24) * 60 + (m % 60);
+}
+
+function isNowInWindow(now, startHHMM, endHHMM) {
+  const minutes = now.getHours() * 60 + now.getMinutes();
+  const start = parseHHMMToMinutes(startHHMM);
+  const end = parseHHMMToMinutes(endHHMM);
+  if (start <= end) {
+    return minutes >= start && minutes < end;
+  } else {
+    // 자정 경계跨越 시간대 예: 23:00~02:00
+    return minutes >= start || minutes < end;
+  }
+}
+
+function randomBetween(min, max) {
+  return min + Math.random() * (max - min);
+}
+
+// 현재 시간과 사용자 설정을 고려한 유효 간격(분) 계산
+function computeDynamicIntervalMinutes() {
+  const base = scheduleInterval; // 사용자가 /schedule로 지정한 기본값
+  if (!useWindowWeighting) return base;
+  const now = new Date();
+  const inPrime = PRIME_WINDOWS.some(w => isNowInWindow(now, w.start, w.end));
+  if (inPrime) {
+    // 프라임 시간대엔 강제 1~2분
+    return randomBetween(1, 2);
+  }
+  // 일반 시간대: 사용자가 2분 이하 설정한 경우 3~5분으로 완화, 더 길게 설정했으면 존중
+  if (base <= 2) return randomBetween(3, 5);
+  return base;
+}
 
 function getUptime() {
   const ms = Date.now() - startTime;
@@ -1083,12 +1129,24 @@ function tryLaunchInstance(interaction = null, manual = false) {
     
     sendEmbed(interaction, status, errorMsg, manual);
 
-    // ⏳ 429 발생 시 10분 쿨다운 진입 및 스케줄 재계산
+    // ⏳ 429 발생 시 지수 쿨다운 진입 및 스케줄 재계산
     if (rateLimited) {
-      cooldownUntil = Date.now() + (10 * 60 * 1000); // 10분
-      cooldownNotified = true; // 바로 알림 전송하므로 플래그 설정
-      writeLog('Entered 429 cooldown window for 10 minutes');
-      // 알림 1회 전송
+      const nowTs = Date.now();
+      // 연속성 판정: 15분 내 재발이면 연속 카운트 유지/증가, 아니면 리셋
+      if (lastRateLimitAt && (nowTs - lastRateLimitAt) <= 15 * 60 * 1000) {
+        rateLimitStreak += 1;
+      } else {
+        rateLimitStreak = 1;
+      }
+      lastRateLimitAt = nowTs;
+
+      // 기본 10분, 연속될수록 x2, 최대 60분
+      const baseMin = 10;
+      const backoffMin = Math.min(60, baseMin * Math.pow(2, Math.max(0, rateLimitStreak - 1)));
+      cooldownUntil = nowTs + (backoffMin * 60 * 1000);
+      cooldownNotified = false; // streak/ETA가 바뀌었으니 재알림 허용
+      writeLog(`Entered 429 cooldown (streak=${rateLimitStreak}) for ${backoffMin} minutes`);
+      // 알림 전송 (한 윈도우 1회이지만, 위에서 false로 초기화했으므로 즉시 한번 보냄)
       notifyCooldown();
       // 다음 시도 일정 재설정
       if (typeof global.updateSchedule === 'function') global.updateSchedule();
@@ -1253,6 +1311,12 @@ client.on('interactionCreate', async interaction => {
         } else {
           nextAttemptTime = (LANG === 'ko') ? `약 ${scheduleInterval}분 후` : `~${scheduleInterval} min`;
         }
+        // 유효 간격 및 모드 표시
+        const effMin = computeDynamicIntervalMinutes();
+        const nowLocal = new Date();
+        const inPrime = PRIME_WINDOWS.some(w => isNowInWindow(nowLocal, w.start, w.end));
+        const modeLabel = inPrime ? (LANG === 'ko' ? '프라임 시간대' : 'prime window') : (LANG === 'ko' ? '일반' : 'normal');
+        const intervalText = `${effMin.toFixed(1)}분 (${modeLabel})`;
         
         const embed = new EmbedBuilder()
           .setTitle('🤖 ' + t('bot_status'))
@@ -1262,7 +1326,8 @@ client.on('interactionCreate', async interaction => {
             { name: '📈 최근 성공률', value: `${successRate}% (최근 ${recentAttempts.length}회)`, inline: true },
             { name: '🚀 ' + t('auto_creation'), value: autoLaunch ? `🟢 ${t('enabled')}` : `🔴 ${t('disabled')}`, inline: true },
             { name: '⏱️ 다음 시도', value: nextAttemptTime, inline: true },
-            { name: '⚙️ 시도 간격', value: `${scheduleInterval}분`, inline: true },
+            { name: '⚙️ 시도 간격', value: `${scheduleInterval}분 (기본)`, inline: true },
+            { name: '🧠 유효 간격', value: intervalText, inline: true },
             { name: '🖥️ Shape', value: ociConfig.SHAPE || 'Unknown', inline: true },
             { name: '🌏 Region', value: ociConfig.REGION || 'Unknown', inline: true },
             { name: '💾 사양', value: `${ociConfig.shapeConfig?.ocpus || '?'} OCPU, ${ociConfig.shapeConfig?.memoryInGBs || '?'}GB RAM`, inline: true }
@@ -1889,14 +1954,19 @@ client.once('ready', () => {
       delayMs = cooldownUntil - now;
       if (!cooldownNotified) { cooldownNotified = true; notifyCooldown(); }
     } else {
-      // 지터: scheduleInterval 기준 ±30초,
-      // 단, scheduleInterval이 2분 이하이면 60~120초 범위로 제한 (1~2분 권장)
-      const baseMs = scheduleInterval * 60 * 1000;
-      if (scheduleInterval <= 2) {
+      // 창 가중/사용자 설정을 반영한 유효 간격 계산
+      const effMin = computeDynamicIntervalMinutes();
+      const baseMs = effMin * 60 * 1000;
+      if (effMin <= 2) {
         // 60~120초 사이 랜덤
         delayMs = (60 + Math.random() * 60) * 1000;
+      } else if (effMin <= 5) {
+        // 3~5분 구간에선 ±45초 지터
+        const jitter = (Math.random() * 90 - 45) * 1000;
+        delayMs = Math.max(60 * 1000, baseMs + jitter);
       } else {
-        const jitter = (Math.random() * 60 - 30) * 1000; // -30s ~ +30s
+        // 그 외 ±60초 지터
+        const jitter = (Math.random() * 120 - 60) * 1000;
         delayMs = Math.max(60 * 1000, baseMs + jitter);
       }
     }
